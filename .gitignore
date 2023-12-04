@@ -128,3 +128,16 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# IDEs and editors
+.DS_Store
+.idea
+
+# Foundry cache
+cache
+dry-run
+
+# Hardhat cache
+artifacts
+cache_hardhat
+typechain

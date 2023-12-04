@@ -1,0 +1,44 @@
+name: Node.js
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+
+jobs: # each workflow consists of 1+ jobs; by default, all jobs run in parallel
+  test: # Run tests.
+    runs-on: ubuntu-latest # host's operating system
+    steps: # each job consists of 1+ steps
+      - name: Checkout commit # download the code from triggering commit
+        uses: actions/checkout@v3
+
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: "yarn"
+          cache-dependency-path: "yarn.lock"
+
+      - name: Install dependencies 📦
+        run: yarn install --frozen-lockfile
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build
+        id: build
+
+      - name: Generate Typechain types
+        run: yarn typechain
+
+      - name: Run hardhat tests
+        run: yarn test:hardhat
