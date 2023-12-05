@@ -12,6 +12,7 @@
     "declarationDir": "dist"
   },
   "include": [
+    "index.ts",
     "./src",
     "./typechain"
   ]
