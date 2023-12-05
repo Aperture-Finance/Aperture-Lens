@@ -17,6 +17,11 @@ jobs:
       - name: Install dependencies 📦
         run: yarn install --frozen-lockfile
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
       - name: Generate Typechain types and build
         run: yarn build
 
