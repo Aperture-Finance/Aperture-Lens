@@ -2,9 +2,18 @@ import { ApertureSupportedChainId, getChainInfo, viem } from "@aperture_finance/
 import { TickMath } from "@uniswap/v3-sdk";
 import { expect } from "chai";
 import { config as dotenvConfig } from "dotenv";
-import { createPublicClient, getContract, http, toHex } from "viem";
-import { getTicksSlots, getPositionsSlots, getStaticSlots, getTickBitmapSlots } from "../../src/viem/poolLens";
-import { IUniswapV3Pool__factory } from "../../typechain";
+import { ContractFunctionResult, createPublicClient, getContract, http, toHex } from "viem";
+import {
+  getTicksSlots,
+  getPositionsSlots,
+  getStaticSlots,
+  getTickBitmapSlots,
+  getPopulatedTicksInRange,
+  getPositionDetails,
+  getPositions,
+  getAllPositionsByOwner,
+} from "../../src/viem";
+import { EphemeralGetPositions__factory, IUniswapV3Pool__factory } from "../../typechain";
 
 dotenvConfig();
 
@@ -13,7 +22,7 @@ const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
 describe("Pool lens test", () => {
-  const { chain, uniswap_v3_factory } = getChainInfo(chainId);
+  const { chain, uniswap_v3_factory, uniswap_v3_nonfungible_position_manager } = getChainInfo(chainId);
   const publicClient = createPublicClient({
     chain,
     transport: http(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`),
@@ -27,6 +36,73 @@ describe("Pool lens test", () => {
     address: pool,
     abi: IUniswapV3Pool__factory.abi,
     publicClient,
+  });
+  const npm = viem.getNPM(chainId, publicClient);
+
+  it("Test getting populated ticks", async () => {
+    const [, tickCurrent] = await poolContract.read.slot0({ blockNumber });
+    const ticks = await getPopulatedTicksInRange(pool, tickCurrent, tickCurrent, publicClient, blockNumber);
+    await Promise.all(
+      ticks.map(async ({ tick, liquidityGross, liquidityNet }) => {
+        const [_liquidityGross, _liquidityNet] = await poolContract.read.ticks([tick], { blockNumber });
+        expect(liquidityGross).to.be.eq(_liquidityGross);
+        expect(liquidityNet).to.be.eq(_liquidityNet);
+      }),
+    );
+  });
+
+  it("Test getting position details", async () => {
+    const {
+      tokenId,
+      position: { token0, token1, fee },
+      slot0: { sqrtPriceX96, tick },
+    } = await getPositionDetails(uniswap_v3_nonfungible_position_manager, 4n, publicClient, blockNumber);
+    expect(tokenId).to.be.eq(4n);
+    const [_sqrtPriceX96, _tick] = await getContract({
+      address: viem.computePoolAddress(uniswap_v3_factory, token0, token1, fee),
+      abi: IUniswapV3Pool__factory.abi,
+      publicClient,
+    }).read.slot0({ blockNumber });
+    expect(sqrtPriceX96).to.be.eq(_sqrtPriceX96);
+    expect(tick).to.be.eq(_tick);
+  });
+
+  async function verifyPositionDetails(posArr: ContractFunctionResult<typeof EphemeralGetPositions__factory.abi>) {
+    await Promise.all(
+      posArr.map(async ({ tokenId, position }) => {
+        const [, , token0, token1, fee, tickLower, tickUpper, liquidity] = await npm.read.positions([tokenId], {
+          blockNumber,
+        });
+        expect(position.token0).to.be.eq(token0);
+        expect(position.token1).to.be.eq(token1);
+        expect(position.fee).to.be.eq(fee);
+        expect(position.tickLower).to.be.eq(tickLower);
+        expect(position.tickUpper).to.be.eq(tickUpper);
+        expect(position.liquidity).to.be.eq(liquidity);
+      }),
+    );
+  }
+
+  it("Test getting position array", async () => {
+    const posArr = await getPositions(
+      uniswap_v3_nonfungible_position_manager,
+      Array.from({ length: 100 }, (_, i) => BigInt(i + 1)),
+      publicClient,
+      blockNumber,
+    );
+    await verifyPositionDetails(posArr);
+  });
+
+  it("Test getting all positions by owner", async () => {
+    const totalSupply = await npm.read.totalSupply({ blockNumber });
+    const owner = await npm.read.ownerOf([totalSupply - 1n], { blockNumber });
+    const posArr = await getAllPositionsByOwner(
+      uniswap_v3_nonfungible_position_manager,
+      owner,
+      publicClient,
+      blockNumber,
+    );
+    await verifyPositionDetails(posArr);
   });
 
   it("Test getting static storage slots", async () => {
