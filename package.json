@@ -1,6 +1,6 @@
 {
   "name": "aperture-lens",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Contains ephemeral lens contracts that can be called without deployment and their interfaces in various Web3 libraries.",
   "author": "Aperture Finance <engineering@aperture.finance>",
   "license": "Apache-2.0",
@@ -29,6 +29,8 @@
     "node": ">=18"
   },
   "scripts": {
+    "build": "yarn typechain && tsc --build",
+    "clean": "tsc --build --clean && forge clean",
     "compile": "forge build",
     "test": "forge test",
     "test:hardhat": "npx hardhat test",
@@ -45,6 +47,7 @@
     "viem": "^1.19.11"
   },
   "devDependencies": {
+    "@aperture_finance/uniswap-v3-automation-sdk": "^1.8.4",
     "@ethersproject/abi": "5.7.0",
     "@ethersproject/providers": "5.7.2",
     "@nomicfoundation/hardhat-foundry": "^1.1.1",
@@ -54,6 +57,7 @@
     "@types/chai": "^4.3.11",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.0",
+    "chai": "^4.3.10",
     "hardhat": "^2.19.1",
     "mocha": "^10.2.0",
     "prettier": "^3.1.0",
