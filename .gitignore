@@ -141,3 +141,8 @@ dry-run
 artifacts
 cache_hardhat
 typechain
+
+
+# Added by cargo
+
+/target

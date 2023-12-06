@@ -2,13 +2,13 @@ import { AbiParametersToPrimitiveTypes, ExtractAbiFunction } from "abitype";
 import { Address, PublicClient } from "viem";
 import {
   EphemeralAllPositionsByOwner__factory,
+  EphemeralGetPopulatedTicksInRange__factory,
+  EphemeralGetPosition__factory,
+  EphemeralGetPositions__factory,
   EphemeralPoolPositions__factory,
   EphemeralPoolSlots__factory,
   EphemeralPoolTickBitmap__factory,
   EphemeralPoolTicks__factory,
-  EphemeralGetPopulatedTicksInRange__factory,
-  EphemeralGetPosition__factory,
-  EphemeralGetPositions__factory,
 } from "../../typechain";
 import { callEphemeralContract } from "./caller";
 
