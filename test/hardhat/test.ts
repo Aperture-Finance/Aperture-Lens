@@ -4,14 +4,15 @@ import { expect } from "chai";
 import { config as dotenvConfig } from "dotenv";
 import { ContractFunctionResult, createPublicClient, getContract, http, toHex } from "viem";
 import {
-  getTicksSlots,
-  getPositionsSlots,
-  getStaticSlots,
-  getTickBitmapSlots,
+  getAllPositionsByOwner,
   getPopulatedTicksInRange,
   getPositionDetails,
   getPositions,
-  getAllPositionsByOwner,
+  getPositionsSlots,
+  getStaticSlots,
+  getStorageAt,
+  getTickBitmapSlots,
+  getTicksSlots,
 } from "../../src/viem";
 import { EphemeralGetPositions__factory, EphemeralPoolSlots__factory, IUniswapV3Pool__factory } from "../../typechain";
 
@@ -38,6 +39,21 @@ describe("Pool lens test", () => {
     publicClient,
   });
   const npm = viem.getNPM(chainId, publicClient);
+
+  it("Test extsload", async () => {
+    const slots = await getStorageAt(
+      pool,
+      Array.from({ length: 4 }, (_, i) => toHex(i, { size: 32 })),
+      publicClient,
+      blockNumber,
+    );
+    await Promise.all(
+      slots.map(async (slot, i) => {
+        const _slot = await publicClient.getStorageAt({ address: pool, slot: toHex(i), blockNumber });
+        expect(slot).to.be.eq(_slot);
+      }),
+    );
+  });
 
   it("Test getting populated ticks", async () => {
     const [, tickCurrent] = await poolContract.read.slot0({ blockNumber });

@@ -12,6 +12,7 @@ pub mod ephemeral_pool_positions;
 pub mod ephemeral_pool_slots;
 pub mod ephemeral_pool_tick_bitmap;
 pub mod ephemeral_pool_ticks;
+pub mod ephemeral_storage_lens;
 pub mod erc20_caller;
 pub mod fixed_point_96;
 pub mod fixed_point_math_lib;
