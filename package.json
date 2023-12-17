@@ -1,6 +1,6 @@
 {
   "name": "aperture-lens",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "Contains ephemeral lens contracts that can be called without deployment and their interfaces in various Web3 libraries.",
   "author": "Aperture Finance <engineering@aperture.finance>",
   "license": "Apache-2.0",
@@ -39,7 +39,7 @@
     "clean": "tsc --build --clean && forge clean",
     "compile": "forge build",
     "test": "forge test",
-    "test:hardhat": "npx hardhat test",
+    "test:hardhat": "hardhat test",
     "snapshot": "forge snapshot",
     "snapshot:diff": "forge snapshot --diff",
     "prettier": "prettier -c {contracts,test}/**/*.sol ./**/*.ts",
@@ -50,10 +50,10 @@
     "@aperture_finance/uni-v3-lib": "^1.2.0",
     "@openzeppelin/contracts": "^5.0.1",
     "ethers": "5.7.2",
-    "viem": "^1.20.0"
+    "viem": "^1.20.1"
   },
   "devDependencies": {
-    "@aperture_finance/uniswap-v3-automation-sdk": "^1.8.5",
+    "@aperture_finance/uniswap-v3-automation-sdk": "^1.9.1",
     "@ethersproject/abi": "5.7.0",
     "@ethersproject/providers": "5.7.2",
     "@nomicfoundation/hardhat-foundry": "^1.1.1",
@@ -62,13 +62,13 @@
     "@typechain/hardhat": "^7.0.0",
     "@types/chai": "^4.3.11",
     "@types/mocha": "^10.0.6",
-    "@types/node": "^20.10.0",
+    "@types/node": "^20.10.4",
     "chai": "^4.3.10",
-    "hardhat": "^2.19.1",
+    "hardhat": "^2.19.2",
     "mocha": "^10.2.0",
-    "prettier": "^3.1.0",
+    "prettier": "^3.1.1",
     "prettier-plugin-solidity": "^1.2.0",
-    "ts-node": "^10.9.1",
+    "ts-node": "^10.9.2",
     "typechain": "^8.3.2",
     "typescript": "^5.3.3"
   },

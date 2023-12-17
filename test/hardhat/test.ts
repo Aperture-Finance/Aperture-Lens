@@ -13,7 +13,7 @@ import {
   getPositions,
   getAllPositionsByOwner,
 } from "../../src/viem";
-import { EphemeralGetPositions__factory, IUniswapV3Pool__factory } from "../../typechain";
+import { EphemeralGetPositions__factory, EphemeralPoolSlots__factory, IUniswapV3Pool__factory } from "../../typechain";
 
 dotenvConfig();
 
@@ -105,29 +105,30 @@ describe("Pool lens test", () => {
     await verifyPositionDetails(posArr);
   });
 
-  it("Test getting static storage slots", async () => {
-    const slots = await getStaticSlots(pool, publicClient, blockNumber);
+  async function verifySlots(slots: ContractFunctionResult<typeof EphemeralPoolSlots__factory.abi>) {
     expect(slots.some(({ data }) => data > 0)).to.be.true;
     const address = pool;
-    const altSlots = await Promise.all([
-      publicClient.getStorageAt({ address, slot: toHex(0), blockNumber }),
-      publicClient.getStorageAt({ address, slot: toHex(1), blockNumber }),
-      publicClient.getStorageAt({ address, slot: toHex(2), blockNumber }),
-      publicClient.getStorageAt({ address, slot: toHex(3), blockNumber }),
-    ]);
-    for (let i = 0; i < 4; i++) {
+    const altSlots = await Promise.all(
+      slots.slice(0, 4).map(({ slot }) => publicClient.getStorageAt({ address, slot: toHex(slot), blockNumber })),
+    );
+    for (let i = 0; i < altSlots.length; i++) {
       expect(slots[i].data).to.be.eq(BigInt(altSlots[i]!));
     }
+  }
+
+  it("Test getting static storage slots", async () => {
+    const slots = await getStaticSlots(pool, publicClient, blockNumber);
+    await verifySlots(slots);
   });
 
   it("Test getting populated ticks slots", async () => {
     const slots = await getTicksSlots(pool, TickMath.MIN_TICK, TickMath.MAX_TICK, publicClient, blockNumber);
-    expect(slots.some(({ data }) => data > 0)).to.be.true;
+    await verifySlots(slots);
   });
 
   it("Test getting tick bitmap slots", async () => {
     const slots = await getTickBitmapSlots(pool, publicClient, blockNumber);
-    expect(slots.some(({ data }) => data > 0)).to.be.true;
+    await verifySlots(slots);
   });
 
   it("Test getting positions mapping slots", async () => {
@@ -144,6 +145,6 @@ describe("Pool lens test", () => {
       tickUpper: tickUpper!,
     }));
     const slots = await getPositionsSlots(pool, positions, publicClient, blockNumber);
-    expect(slots.some(({ data }) => data > 0)).to.be.true;
+    await verifySlots(slots);
   });
 });
