@@ -137,7 +137,7 @@ mod tests {
     use super::*;
     use crate::bindings::{
         i_nonfungible_position_manager::INonfungiblePositionManager,
-        i_uniswap_v3_pool::IUniswapV3Pool,
+        i_uniswap_v3_pool::{IUniswapV3Pool, MintFilter},
         shared_types::{PositionFull, Slot0},
     };
     use anyhow::Result;
@@ -397,6 +397,31 @@ mod tests {
         Ok(())
     }
 
-    // #[tokio::test]
-    // async fn test_get_positions_slots() -> Result<()> {}
+    #[tokio::test]
+    async fn test_get_positions_slots() -> Result<()> {
+        let client = make_provider().await;
+        let filter = MintFilter::new::<&Provider<Http>, Provider<Http>>(
+            Filter::new().from_block(17000000 - 10000).to_block(17000000),
+            &client,
+        );
+        let logs = filter.query().await?;
+        let positions = logs
+            .iter()
+            .map(
+                |&MintFilter {
+                     owner,
+                     tick_lower,
+                     tick_upper,
+                     ..
+                 }| PositionKey {
+                    owner,
+                    tick_lower,
+                    tick_upper,
+                },
+            )
+            .collect();
+        let slots = get_positions_slots(POOL_ADDRESS.parse()?, positions, client.clone(), Some(*BLOCK_NUMBER)).await?;
+        verify_slots(slots, client).await;
+        Ok(())
+    }
 }
