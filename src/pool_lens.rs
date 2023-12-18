@@ -1,11 +1,8 @@
 use crate::{
     bindings::{
-        ephemeral_all_positions_by_owner::{AllPositionsReturn, EphemeralAllPositionsByOwner},
         ephemeral_get_populated_ticks_in_range::{
             EphemeralGetPopulatedTicksInRange, GetPopulatedTicksInRangeReturn, PopulatedTick,
         },
-        ephemeral_get_position::{EphemeralGetPosition, GetPositionReturn, PositionState},
-        ephemeral_get_positions::{EphemeralGetPositions, GetPositionsReturn},
         ephemeral_pool_positions::{EphemeralPoolPositions, PositionKey},
         ephemeral_pool_slots::{EphemeralPoolSlots, GetSlotsReturn, Slot},
         ephemeral_pool_tick_bitmap::EphemeralPoolTickBitmap,
@@ -31,60 +28,6 @@ pub async fn get_populated_ticks_in_range<M: Middleware>(
         block_id
     ) {
         Ok(GetPopulatedTicksInRangeReturn { populated_ticks }) => Ok(populated_ticks),
-        Err(err) => Err(err),
-    }
-}
-
-pub async fn get_position_details<M: Middleware>(
-    npm: Address,
-    token_id: U256,
-    client: Arc<M>,
-    block_id: Option<BlockId>,
-) -> Result<PositionState, ContractError<M>> {
-    match call_ephemeral_contract!(
-        EphemeralGetPosition<M>,
-        (npm, token_id),
-        GetPositionReturn,
-        client,
-        block_id
-    ) {
-        Ok(GetPositionReturn { state }) => Ok(state),
-        Err(err) => Err(err),
-    }
-}
-
-pub async fn get_positions<M: Middleware>(
-    npm: Address,
-    token_ids: U256,
-    client: Arc<M>,
-    block_id: Option<BlockId>,
-) -> Result<Vec<PositionState>, ContractError<M>> {
-    match call_ephemeral_contract!(
-        EphemeralGetPositions<M>,
-        (npm, token_ids),
-        GetPositionsReturn,
-        client,
-        block_id
-    ) {
-        Ok(GetPositionsReturn { positions }) => Ok(positions),
-        Err(err) => Err(err),
-    }
-}
-
-pub async fn get_all_positions_by_owner<M: Middleware>(
-    npm: Address,
-    owner: Address,
-    client: Arc<M>,
-    block_id: Option<BlockId>,
-) -> Result<Vec<PositionState>, ContractError<M>> {
-    match call_ephemeral_contract!(
-        EphemeralAllPositionsByOwner<M>,
-        (npm, owner),
-        AllPositionsReturn,
-        client,
-        block_id
-    ) {
-        Ok(AllPositionsReturn { positions }) => Ok(positions),
         Err(err) => Err(err),
     }
 }
@@ -135,11 +78,10 @@ pub async fn get_positions_slots<M: Middleware>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bindings::i_uniswap_v3_pool::{IUniswapV3Pool, MintFilter};
     use anyhow::Result;
     use dotenv::dotenv;
-    use ethers::contract::Lazy;
     use futures::future::join_all;
-    use std::sync::Arc;
 
     const POOL_ADDRESS: &str = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640";
     static BLOCK_NUMBER: Lazy<BlockId> = Lazy::new(|| BlockId::from(17000000));
@@ -155,7 +97,47 @@ mod tests {
         Arc::new(Provider::<Http>::connect(&*RPC_URL).await)
     }
 
+    #[tokio::test]
+    async fn test_get_populated_ticks_in_range() -> Result<()> {
+        let client = make_provider().await;
+        let pool = IUniswapV3Pool::new(POOL_ADDRESS.parse::<Address>()?, client.clone());
+        let (_, tick_current, _, _, _, _, _) = pool.slot_0().block(BlockId::from(*BLOCK_NUMBER)).call().await?;
+        let ticks = get_populated_ticks_in_range(
+            POOL_ADDRESS.parse()?,
+            tick_current,
+            tick_current,
+            client.clone(),
+            Some(*BLOCK_NUMBER),
+        )
+        .await?;
+        assert!(!ticks.is_empty());
+        let mut multicall = Multicall::new(client.clone(), None).await?;
+        multicall.add_calls(false, ticks.iter().map(|&PopulatedTick { tick, .. }| pool.ticks(tick)));
+        let alt_ticks: Vec<(u128, i128, U256, U256, i64, U256, u32, bool)> = multicall
+            .block(match *BLOCK_NUMBER {
+                BlockId::Number(n) => n,
+                _ => panic!("block id must be a number"),
+            })
+            .call_array()
+            .await?;
+        for (
+            i,
+            &PopulatedTick {
+                liquidity_gross,
+                liquidity_net,
+                ..
+            },
+        ) in ticks.iter().enumerate()
+        {
+            let (_liquidity_gross, _liquidity_net, _, _, _, _, _, _) = alt_ticks[i];
+            assert_eq!(liquidity_gross, _liquidity_gross);
+            assert_eq!(liquidity_net, _liquidity_net);
+        }
+        Ok(())
+    }
+
     async fn verify_slots(slots: Vec<Slot>, client: Arc<Provider<Http>>) {
+        assert!(!slots.is_empty());
         let client = client.as_ref();
         let futures = slots[0..4].iter().map(|slot| async move {
             let data = client
@@ -198,6 +180,31 @@ mod tests {
         Ok(())
     }
 
-    // #[tokio::test]
-    // async fn test_get_positions_slots() -> Result<()> {}
+    #[tokio::test]
+    async fn test_get_positions_slots() -> Result<()> {
+        let client = make_provider().await;
+        let filter = MintFilter::new::<&Provider<Http>, Provider<Http>>(
+            Filter::new().from_block(17000000 - 10000).to_block(17000000),
+            &client,
+        );
+        let logs = filter.query().await?;
+        let positions = logs
+            .iter()
+            .map(
+                |&MintFilter {
+                     owner,
+                     tick_lower,
+                     tick_upper,
+                     ..
+                 }| PositionKey {
+                    owner,
+                    tick_lower,
+                    tick_upper,
+                },
+            )
+            .collect();
+        let slots = get_positions_slots(POOL_ADDRESS.parse()?, positions, client.clone(), Some(*BLOCK_NUMBER)).await?;
+        verify_slots(slots, client).await;
+        Ok(())
+    }
 }

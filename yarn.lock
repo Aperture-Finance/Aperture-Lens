@@ -17,18 +17,18 @@
     "@uniswap/v3-periphery" "^1.4.4"
     solady "^0.0.138"
 
-"@aperture_finance/uniswap-v3-automation-sdk@^1.8.5":
-  version "1.8.5"
-  resolved "https://registry.yarnpkg.com/@aperture_finance/uniswap-v3-automation-sdk/-/uniswap-v3-automation-sdk-1.8.5.tgz#f96a06beb8c4fdc59e21c1c8557c18d524492010"
-  integrity sha512-6O4PXH8KTh2AFufKhSMiOk3FE53UfnBwCSKrswLc3lbtngaIWSKOlu/vDKbmSYevEzOhwRgWzUkB04NCXtkcSg==
+"@aperture_finance/uniswap-v3-automation-sdk@^1.9.1":
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/@aperture_finance/uniswap-v3-automation-sdk/-/uniswap-v3-automation-sdk-1.9.1.tgz#1602caedcb2c50359e54d1dda9e3c1953e8a4cda"
+  integrity sha512-HB/jmfkzg1H43a6wwqOueHlRfAXorSrKwp6mGuegTXHN9UBObeIUDkEJAfCXpW3seEHg03ltRi0NDzLf8dvnOQ==
   dependencies:
     "@uniswap/v3-sdk" "^3.10.0"
-    aperture-lens "^0.1.2"
+    aperture-lens "^0.1.5"
     axios "^1.6.2"
     big.js "^6.2.1"
     ethers "5.7.2"
     json-stable-stringify "^1.1.0"
-    viem "^1.19.11"
+    viem "^1.20.0"
     zod "^3.22.4"
 
 "@chainsafe/as-sha256@^0.3.1":
@@ -462,10 +462,15 @@
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.2.0.tgz#a3150eeb09cc7ab207ebf6d7b9ad311a9bdbed12"
   integrity sha512-FZfhjEDbT5GRswV3C6uvLPHMiVD6lQBmpoX5+eSiPaMTXte/IKqI5dykDxzZB/WBeK/CDuQRBWarPdi3FNY2zQ==
 
-"@noble/hashes@1.3.2", "@noble/hashes@~1.3.0", "@noble/hashes@~1.3.2":
+"@noble/hashes@1.3.2":
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.3.2.tgz#6f26dbc8fbc7205873ce3cee2f690eba0d421b39"
   integrity sha512-MVC8EAQp7MvEcm30KWENFjgR+Mkmf+D189XJTkFIlwohU5hcBbn1ZkKq7KVTi2Hme3PMGF390DaL52beVrIihQ==
+
+"@noble/hashes@~1.3.0", "@noble/hashes@~1.3.2":
+  version "1.3.3"
+  resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.3.3.tgz#39908da56a4adc270147bb07968bf3b16cfe1699"
+  integrity sha512-V7/fPHgl+jsVPXqqeOzT8egNj2iBIVt+ECeMMG8TdcnTikP3oaBtUVqpT/gYCR68aEBJSF+XbYUxStjbFMqIIA==
 
 "@noble/secp256k1@1.7.1", "@noble/secp256k1@~1.7.0":
   version "1.7.1"
@@ -694,20 +699,15 @@
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.4.2-solc-0.7.tgz#38f4dbab672631034076ccdf2f3201fab1726635"
   integrity sha512-W6QmqgkADuFcTLzHL8vVoNBtkwjvQRpYIAom7KiUNoLKghyx3FgH0GBjt8NRvigV1ZmMOBllvE1By1C+bi8WpA==
 
-"@openzeppelin/contracts@^5.0.0":
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-5.0.0.tgz#ee0e4b4564f101a5c4ee398cd4d73c0bd92b289c"
-  integrity sha512-bv2sdS6LKqVVMLI5+zqnNrNU/CA+6z6CmwFXm/MzmOPBRSO5reEJN7z0Gbzvs0/bv/MZZXNklubpwy3v2+azsw==
-
-"@openzeppelin/contracts@^5.0.1":
+"@openzeppelin/contracts@^5.0.0", "@openzeppelin/contracts@^5.0.1":
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-5.0.1.tgz#93da90fc209a0a4ff09c1deb037fbb35e4020890"
   integrity sha512-yQJaT5HDp9hYOOp4jTYxMsR02gdFZFXhewX5HW9Jo4fsqSVqqyIO/xTHdWDaKX5a3pv1txmf076Lziz+sO7L1w==
 
 "@scure/base@~1.1.0", "@scure/base@~1.1.2":
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/@scure/base/-/base-1.1.3.tgz#8584115565228290a6c6c4961973e0903bb3df2f"
-  integrity sha512-/+SgoRjLq7Xlf0CWuLHq2LUZeL/w65kfzAPG5NH9pcmBhs+nunQTn4gvdwgMTIXnt9b2C/1SeL2XiysZEyIC9Q==
+  version "1.1.5"
+  resolved "https://registry.yarnpkg.com/@scure/base/-/base-1.1.5.tgz#1d85d17269fe97694b9c592552dd9e5e33552157"
+  integrity sha512-Brj9FiG2W1MRQSTB212YVPRrcbjkv48FoZi/u4l/zds/ieRrqsh7aUf6CLwkAq61oKXr/ZlTzlY66gLIj3TFTQ==
 
 "@scure/bip32@1.1.5":
   version "1.1.5"
@@ -882,10 +882,10 @@
   resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-10.0.6.tgz#818551d39113081048bdddbef96701b4e8bb9d1b"
   integrity sha512-dJvrYWxP/UcXm36Qn36fxhUKu8A/xMRXVT2cliFF1Z7UA9liG5Psj3ezNSZw+5puH2czDXRLcXQxf8JbJt0ejg==
 
-"@types/node@*", "@types/node@^20.10.0":
-  version "20.10.3"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.10.3.tgz#4900adcc7fc189d5af5bb41da8f543cea6962030"
-  integrity sha512-XJavIpZqiXID5Yxnxv3RUDKTN5b81ddNC3ecsA0SoFXz/QU8OGBwZGMomiq0zw+uuqbL/krztv/DINAQ/EV4gg==
+"@types/node@*", "@types/node@^20.10.4":
+  version "20.10.4"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.10.4.tgz#b246fd84d55d5b1b71bf51f964bd514409347198"
+  integrity sha512-D08YG6rr8X90YB56tSIuBaddy/UXAA9RKJoFvrsnogAum/0pmjkgi4+2nx96A330FmioegBWmEYQ+syqCFaveg==
   dependencies:
     undici-types "~5.26.4"
 
@@ -1013,9 +1013,9 @@ abstract-level@^1.0.0, abstract-level@^1.0.2, abstract-level@^1.0.3:
     queue-microtask "^1.2.3"
 
 acorn-walk@^8.1.1:
-  version "8.3.0"
-  resolved "https://registry.yarnpkg.com/acorn-walk/-/acorn-walk-8.3.0.tgz#2097665af50fd0cf7a2dfccd2b9368964e66540f"
-  integrity sha512-FS7hV565M5l1R08MXqo8odwMTB02C2UqzB17RVgu9EyuYFBqJZ3/ZY97sQD5FewVu1UyDFc1yztUDrAwT0EypA==
+  version "8.3.1"
+  resolved "https://registry.yarnpkg.com/acorn-walk/-/acorn-walk-8.3.1.tgz#2f10f5b69329d90ae18c58bf1fa8fccd8b959a43"
+  integrity sha512-TgUZgYvqZprrl7YldZNoa9OciCAyZR+Ejm9eXzKCmjsF5IKp/wgQ7Z/ZpjpGTIUPwrHQIcYeI8qDh4PsEwxMbw==
 
 acorn@^8.4.1:
   version "8.11.2"
@@ -1096,15 +1096,15 @@ anymatch@~3.1.2:
     normalize-path "^3.0.0"
     picomatch "^2.0.4"
 
-aperture-lens@^0.1.2:
-  version "0.1.4"
-  resolved "https://registry.yarnpkg.com/aperture-lens/-/aperture-lens-0.1.4.tgz#53336e5db2b65853b633369a528bf1a1923c9664"
-  integrity sha512-s3BmGXh7j8EDxMzYgmfL3DLn80sBMhCTo0y+6it5Js2E5P5UntbNMCtzZtgu9UrnPp+a1+5ZVX2DPJR4WtEC/A==
+aperture-lens@^0.1.5:
+  version "0.1.5"
+  resolved "https://registry.yarnpkg.com/aperture-lens/-/aperture-lens-0.1.5.tgz#f85fc26928713255019214635f0dc25baba1a046"
+  integrity sha512-LWDeGVpVCTskbf5ANJPt+IXPRfqKUTG3pX1Q70bYxcbKVfD049L403uMQiXZSI92uAnf/SUEGXzXrgx+dp+qag==
   dependencies:
     "@aperture_finance/uni-v3-lib" "^1.2.0"
-    "@openzeppelin/contracts" "^5.0.0"
+    "@openzeppelin/contracts" "^5.0.1"
     ethers "5.7.2"
-    viem "^1.19.11"
+    viem "^1.20.0"
 
 arg@^4.1.0:
   version "4.1.3"
@@ -1926,10 +1926,10 @@ hardhat-watcher@^2.1.1:
   dependencies:
     chokidar "^3.5.3"
 
-hardhat@^2.19.1:
-  version "2.19.1"
-  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.19.1.tgz#5e09e8070ecfc6109ba9d3a4a117ec2b0643032a"
-  integrity sha512-bsWa63g1GB78ZyMN08WLhFElLPA+J+pShuKD1BFO2+88g3l+BL3R07vj9deIi9dMbssxgE714Gof1dBEDGqnCw==
+hardhat@^2.19.2:
+  version "2.19.2"
+  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.19.2.tgz#815819e4efd234941d495decb718b358d572e2c8"
+  integrity sha512-CRU3+0Cc8Qh9UpxKd8cLADDPes7ZDtKj4dTK+ERtLBomEzhRPLWklJn4VKOwjre9/k8GNd/e9DYxpfuzcxbXPQ==
   dependencies:
     "@ethersproject/abi" "^5.1.2"
     "@metamask/eth-sig-util" "^4.0.0"
@@ -2586,10 +2586,10 @@ prettier@^2.3.1:
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.8.8.tgz#e8c5d7e98a4305ffe3de2e1fc4aca1a71c28b1da"
   integrity sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==
 
-prettier@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.1.0.tgz#c6d16474a5f764ea1a4a373c593b779697744d5e"
-  integrity sha512-TQLvXjq5IAibjh8EpBIkNKxO749UEWABoiIZehEPiY4GNpVdhaFKqSTu+QrlU6D2dPAfubRmtJTi4K4YkQ5eXw==
+prettier@^3.1.1:
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.1.1.tgz#6ba9f23165d690b6cbdaa88cb0807278f7019848"
+  integrity sha512-22UbSzg8luF4UuZtzgiUOfcGM8s4tjBv6dJRT7j275NXsy2jb4aJa4NNveul5x4eqlF1wuhuR2RElK71RvmVaw==
 
 proxy-from-env@^1.1.0:
   version "1.1.0"
@@ -2941,10 +2941,10 @@ ts-essentials@^7.0.1:
   resolved "https://registry.yarnpkg.com/ts-essentials/-/ts-essentials-7.0.3.tgz#686fd155a02133eedcc5362dc8b5056cde3e5a38"
   integrity sha512-8+gr5+lqO3G84KdiTSMRLtuyJ+nTBVRKuCrK4lidMPdVeEp0uqC875uE5NMcaA7YYMN7XsNiFQuMvasF8HT/xQ==
 
-ts-node@^10.9.1:
-  version "10.9.1"
-  resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-10.9.1.tgz#e73de9102958af9e1f0b168a6ff320e25adcff4b"
-  integrity sha512-NtVysVPkxxrwFGUUxGYhfux8k78pQB3JqYBXlLRZgdGUqTO5wU/UyHop5p70iEbGhB7q5KmiZiU0Y3KlJrScEw==
+ts-node@^10.9.2:
+  version "10.9.2"
+  resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-10.9.2.tgz#70f021c9e185bccdca820e26dc413805c101c71f"
+  integrity sha512-f0FFpIdcHgn8zcPSbf1dRevwt047YMnaiJM3u2w2RewrB+fob/zePZcrOyQoLMMO7aBIddLcQIEK5dYjkLnGrQ==
   dependencies:
     "@cspotcode/source-map-support" "^0.8.0"
     "@tsconfig/node10" "^1.0.7"
@@ -3068,24 +3068,10 @@ v8-compile-cache-lib@^3.0.1:
   resolved "https://registry.yarnpkg.com/v8-compile-cache-lib/-/v8-compile-cache-lib-3.0.1.tgz#6336e8d71965cb3d35a1bbb7868445a7c05264bf"
   integrity sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==
 
-viem@^1.19.11:
-  version "1.19.11"
-  resolved "https://registry.yarnpkg.com/viem/-/viem-1.19.11.tgz#de4ee7537ee036894bd818aa316a8faecaf017e9"
-  integrity sha512-dbsXEWDBZkByuzJXAs/e01j7dpUJ5ICF5WcyntFwf8Y97n5vnC/91lAleSa6DA5V4WJvYZbhDpYeTctsMAQnhA==
-  dependencies:
-    "@adraffy/ens-normalize" "1.10.0"
-    "@noble/curves" "1.2.0"
-    "@noble/hashes" "1.3.2"
-    "@scure/bip32" "1.3.2"
-    "@scure/bip39" "1.2.1"
-    abitype "0.9.8"
-    isows "1.0.3"
-    ws "8.13.0"
-
-viem@^1.20.0:
-  version "1.20.0"
-  resolved "https://registry.yarnpkg.com/viem/-/viem-1.20.0.tgz#25cb019831f46aeecf2c8c5cdbad41e4f79b2e32"
-  integrity sha512-yPjV9pJr10xi28C/9LEvs5zdZNEMiru3Kz7nufghVYABJAfeSkoZQXb6b23n7MscS7c55JO5nmUI3xKkd9g6Yg==
+viem@^1.20.0, viem@^1.20.1:
+  version "1.20.1"
+  resolved "https://registry.yarnpkg.com/viem/-/viem-1.20.1.tgz#ea92f9bab2fded4be556be4d4be724805d11780e"
+  integrity sha512-PaYyfuCVkNFzdaVoV8HefMIt5YtjIG6UPqxOz0rYchN52cD05YcRJlO0h/XrehQfo8ib2RSOkZ0ChJ6Adlh1Jg==
   dependencies:
     "@adraffy/ens-normalize" "1.10.0"
     "@noble/curves" "1.2.0"
