@@ -72,7 +72,6 @@ mod tests {
         shared_types::{PositionFull, Slot0},
     };
     use anyhow::Result;
-    use dotenv::dotenv;
     use ethers::{
         abi::{encode, Token},
         utils::{get_create2_address_from_hash, keccak256},
@@ -84,17 +83,6 @@ mod tests {
     static POOL_INIT_CODE_HASH: Lazy<Bytes> =
         Lazy::new(|| Bytes::from_str("0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54").unwrap());
     static BLOCK_NUMBER: Lazy<BlockId> = Lazy::new(|| BlockId::from(17000000));
-    static RPC_URL: Lazy<String> = Lazy::new(|| {
-        dotenv().ok();
-        format!(
-            "https://mainnet.infura.io/v3/{}",
-            std::env::var("INFURA_API_KEY").unwrap()
-        )
-    });
-
-    async fn make_provider() -> Arc<Provider<Http>> {
-        Arc::new(Provider::<Http>::connect(&*RPC_URL).await)
-    }
 
     /// Computes the address of a Uniswap V3 pool given the factory address, the two tokens, and the fee.
     ///
@@ -130,7 +118,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_position_details() -> Result<()> {
-        let client = make_provider().await;
+        let client = Arc::new(MAINNET.provider());
         let PositionState {
             token_id,
             position: PositionFull {
@@ -215,7 +203,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_positions() -> Result<()> {
-        let client = make_provider().await;
+        let client = Arc::new(MAINNET.provider());
         let positions = get_positions(
             NPM_ADDRESS.parse()?,
             (1..100).map(|i| i.into()).collect(),
@@ -229,7 +217,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_all_positions_by_owner() -> Result<()> {
-        let client = make_provider().await;
+        let client = Arc::new(MAINNET.provider());
         let npm = INonfungiblePositionManager::new(NPM_ADDRESS.parse::<Address>()?, client.clone());
         let total_supply = npm.total_supply().block(*BLOCK_NUMBER).call().await?;
         let owner = npm.owner_of(total_supply.sub(1)).block(*BLOCK_NUMBER).call().await?;
