@@ -80,26 +80,14 @@ mod tests {
     use super::*;
     use crate::bindings::i_uniswap_v3_pool::{IUniswapV3Pool, MintFilter};
     use anyhow::Result;
-    use dotenv::dotenv;
     use futures::future::join_all;
 
     const POOL_ADDRESS: &str = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640";
     static BLOCK_NUMBER: Lazy<BlockId> = Lazy::new(|| BlockId::from(17000000));
-    static RPC_URL: Lazy<String> = Lazy::new(|| {
-        dotenv().ok();
-        format!(
-            "https://mainnet.infura.io/v3/{}",
-            std::env::var("INFURA_API_KEY").unwrap()
-        )
-    });
-
-    async fn make_provider() -> Arc<Provider<Http>> {
-        Arc::new(Provider::<Http>::connect(&*RPC_URL).await)
-    }
 
     #[tokio::test]
     async fn test_get_populated_ticks_in_range() -> Result<()> {
-        let client = make_provider().await;
+        let client = Arc::new(MAINNET.provider());
         let pool = IUniswapV3Pool::new(POOL_ADDRESS.parse::<Address>()?, client.clone());
         let (_, tick_current, _, _, _, _, _) = pool.slot_0().block(BlockId::from(*BLOCK_NUMBER)).call().await?;
         let ticks = get_populated_ticks_in_range(
@@ -151,7 +139,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_static_slots() -> Result<()> {
-        let client = make_provider().await;
+        let client = Arc::new(MAINNET.provider());
         let slots = get_static_slots(POOL_ADDRESS.parse()?, client.clone(), Some(*BLOCK_NUMBER)).await?;
         verify_slots(slots, client).await;
         Ok(())
@@ -159,7 +147,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_ticks_slots() -> Result<()> {
-        let client = make_provider().await;
+        let client = Arc::new(MAINNET.provider());
         let slots = get_ticks_slots(
             POOL_ADDRESS.parse()?,
             -887272,
@@ -174,7 +162,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_tick_bitmap_slots() -> Result<()> {
-        let client = make_provider().await;
+        let client = Arc::new(MAINNET.provider());
         let slots = get_tick_bitmap_slots(POOL_ADDRESS.parse()?, client.clone(), Some(*BLOCK_NUMBER)).await?;
         verify_slots(slots, client).await;
         Ok(())
@@ -182,7 +170,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_positions_slots() -> Result<()> {
-        let client = make_provider().await;
+        let client = Arc::new(MAINNET.provider());
         let filter = MintFilter::new::<&Provider<Http>, Provider<Http>>(
             Filter::new().from_block(17000000 - 10000).to_block(17000000),
             &client,

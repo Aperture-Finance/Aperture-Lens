@@ -33,26 +33,14 @@ pub async fn get_storage_at<M: Middleware>(
 mod tests {
     use super::*;
     use anyhow::Result;
-    use dotenv::dotenv;
     use futures::future::join_all;
 
     const POOL_ADDRESS: &str = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640";
     static BLOCK_NUMBER: Lazy<BlockId> = Lazy::new(|| BlockId::from(17000000));
-    static RPC_URL: Lazy<String> = Lazy::new(|| {
-        dotenv().ok();
-        format!(
-            "https://mainnet.infura.io/v3/{}",
-            std::env::var("INFURA_API_KEY").unwrap()
-        )
-    });
-
-    async fn make_provider() -> Arc<Provider<Http>> {
-        Arc::new(Provider::<Http>::connect(&*RPC_URL).await)
-    }
 
     #[tokio::test]
     async fn test_get_storage_at() -> Result<()> {
-        let client = make_provider().await;
+        let client = Arc::new(MAINNET.provider());
         let slots = get_storage_at(
             POOL_ADDRESS.parse::<Address>()?,
             (0..10).map(|i| H256::from_low_u64_be(i).to_fixed_bytes()).collect(),
