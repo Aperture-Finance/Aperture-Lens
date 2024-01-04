@@ -19,6 +19,24 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: "yarn"
+          cache-dependency-path: "yarn.lock"
+
+      - name: Install dependencies 📦
+        run: yarn install --frozen-lockfile
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Generate contract Rust bindings
+        run: forge bind -b src/bindings/ --module --overwrite
+
       - name: Cache Cargo registry
         uses: actions/cache@v3
         with:
