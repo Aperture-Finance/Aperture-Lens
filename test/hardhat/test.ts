@@ -2,7 +2,7 @@ import { ApertureSupportedChainId, getChainInfo, viem } from "@aperture_finance/
 import { TickMath } from "@uniswap/v3-sdk";
 import { expect } from "chai";
 import { config as dotenvConfig } from "dotenv";
-import { ContractFunctionResult, createPublicClient, getContract, http, toHex } from "viem";
+import { ContractFunctionReturnType, createPublicClient, getContract, http, toHex } from "viem";
 import {
   getAllPositionsByOwner,
   getPopulatedTicksInRange,
@@ -36,7 +36,7 @@ describe("Pool lens test", () => {
   const poolContract = getContract({
     address: pool,
     abi: IUniswapV3Pool__factory.abi,
-    publicClient,
+    client: publicClient,
   });
   const npm = viem.getNPM(chainId, publicClient);
 
@@ -77,13 +77,13 @@ describe("Pool lens test", () => {
     const [_sqrtPriceX96, _tick] = await getContract({
       address: viem.computePoolAddress(uniswap_v3_factory, token0, token1, fee),
       abi: IUniswapV3Pool__factory.abi,
-      publicClient,
+      client: publicClient,
     }).read.slot0({ blockNumber });
     expect(sqrtPriceX96).to.be.eq(_sqrtPriceX96);
     expect(tick).to.be.eq(_tick);
   });
 
-  async function verifyPositionDetails(posArr: ContractFunctionResult<typeof EphemeralGetPositions__factory.abi>) {
+  async function verifyPositionDetails(posArr: ContractFunctionReturnType<typeof EphemeralGetPositions__factory.abi>) {
     await Promise.all(
       posArr.map(async ({ tokenId, position }) => {
         const [, , token0, token1, fee, tickLower, tickUpper, liquidity] = await npm.read.positions([tokenId], {
@@ -121,7 +121,7 @@ describe("Pool lens test", () => {
     await verifyPositionDetails(posArr);
   });
 
-  async function verifySlots(slots: ContractFunctionResult<typeof EphemeralPoolSlots__factory.abi>) {
+  async function verifySlots(slots: ContractFunctionReturnType<typeof EphemeralPoolSlots__factory.abi>) {
     expect(slots.some(({ data }) => data > 0)).to.be.true;
     const address = pool;
     const altSlots = await Promise.all(
