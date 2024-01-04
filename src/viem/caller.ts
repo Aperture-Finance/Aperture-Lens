@@ -1,7 +1,7 @@
 import { Abi, AbiFunction } from "abitype";
 import {
   CallExecutionError,
-  ContractFunctionResult,
+  ContractFunctionReturnType,
   EncodeDeployDataParameters,
   Hex,
   PublicClient,
@@ -20,9 +20,10 @@ export async function callEphemeralContract<TAbi extends Abi>(
   deployParams: EncodeDeployDataParameters<TAbi>,
   publicClient: PublicClient,
   blockNumber?: bigint,
-): Promise<ContractFunctionResult<TAbi>> {
+): Promise<ContractFunctionReturnType<TAbi>> {
   try {
     await publicClient.call({
+      // @ts-ignore
       data: encodeDeployData(deployParams),
       blockNumber,
     });
@@ -31,10 +32,11 @@ export async function callEphemeralContract<TAbi extends Abi>(
     if ("data" in baseError) {
       const abiFunctions = deployParams.abi.filter((x) => x.type === "function");
       if (abiFunctions.length === 1) {
+        // @ts-ignore
         return decodeFunctionResult({
           abi: abiFunctions as [AbiFunction],
           data: baseError.data as Hex,
-        }) as ContractFunctionResult<TAbi>;
+        });
       } else {
         throw new Error("abi should contain exactly one function");
       }
