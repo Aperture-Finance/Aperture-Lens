@@ -25,7 +25,7 @@
   "files": [
     "contracts",
     "dist",
-    "src",
+    "src/**/*.ts",
     "!test",
     "LICENSE",
     "README.md"
