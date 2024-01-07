@@ -60,4 +60,4 @@ jobs:
         run: forge bind -b src/bindings/ --module --overwrite
 
       - name: Publish to crates.io
-        run: cargo publish
+        run: cargo publish --allow-dirty
