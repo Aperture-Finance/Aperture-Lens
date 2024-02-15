@@ -17,6 +17,16 @@
     "@uniswap/v3-periphery" "^1.4.4"
     solady "^0.0.138"
 
+"@aperture_finance/uni-v3-lib@^1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@aperture_finance/uni-v3-lib/-/uni-v3-lib-1.2.1.tgz#1d96fab52af5009b602befc0216bd4325dc4e3c8"
+  integrity sha512-kue+CAK6GVsHCz3oqqiT0l5qZzDKl6dc9G/tsTqfgFhAUYoJcpDqMDtgKq5aQJFyLvDTqT2hHS1UJkhPAYMFSg==
+  dependencies:
+    "@openzeppelin/contracts" "^5.0.1"
+    "@uniswap/v3-core" "^1.0.1"
+    "@uniswap/v3-periphery" "^1.4.4"
+    solady "^0.0.155"
+
 "@aperture_finance/uniswap-v3-automation-sdk@^1.13.1":
   version "1.13.1"
   resolved "https://registry.yarnpkg.com/@aperture_finance/uniswap-v3-automation-sdk/-/uniswap-v3-automation-sdk-1.13.1.tgz#451454e05e745c8c97808e9af0f3a4302e9cab15"
@@ -2774,6 +2784,11 @@ solady@^0.0.138:
   resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.138.tgz#efa7849b35e46301d2f334db04ac731c59efd466"
   integrity sha512-5jRi1IwgoE3+2kVo/zIPRYaSdQhypl2qmmZQj03y9tq6OiswXLYaag7kvhvp6v+iBFSlO2bYgsk8KFXQcX256w==
 
+solady@^0.0.155:
+  version "0.0.155"
+  resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.155.tgz#855cd63190902c4167e8501d74d72272a0285067"
+  integrity sha512-UVFZxRNe+Iv3B2Z0dfo2Pngg4lyeHE1QqpI5wDS5bdhsCUfgEzhFZxQN7DJ6lKy3hSyF39ldGLKlCCEJp7EM4Q==
+
 solc@0.7.3:
   version "0.7.3"
   resolved "https://registry.yarnpkg.com/solc/-/solc-0.7.3.tgz#04646961bd867a744f63d2b4e3c0701ffdc7d78a"
@@ -3066,20 +3081,6 @@ v8-compile-cache-lib@^3.0.1:
   resolved "https://registry.yarnpkg.com/v8-compile-cache-lib/-/v8-compile-cache-lib-3.0.1.tgz#6336e8d71965cb3d35a1bbb7868445a7c05264bf"
   integrity sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==
 
-viem@2.5.0:
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/viem/-/viem-2.5.0.tgz#1d7bd5333a6b9387d42c1c2d368d0b88c2961ee1"
-  integrity sha512-ytHXIWtlgPs4mcsGxXjJrQ25v+N4dE2hBzgCU8CVv4iXNh3PRFRgyYa7igZlmxiMVzkfSHHADOtivS980JhilA==
-  dependencies:
-    "@adraffy/ens-normalize" "1.10.0"
-    "@noble/curves" "1.2.0"
-    "@noble/hashes" "1.3.2"
-    "@scure/bip32" "1.3.2"
-    "@scure/bip39" "1.2.1"
-    abitype "1.0.0"
-    isows "1.0.3"
-    ws "8.13.0"
-
 viem@^1.20.1, viem@^1.20.3:
   version "1.21.4"
   resolved "https://registry.yarnpkg.com/viem/-/viem-1.21.4.tgz#883760e9222540a5a7e0339809202b45fe6a842d"
@@ -3091,6 +3092,20 @@ viem@^1.20.1, viem@^1.20.3:
     "@scure/bip32" "1.3.2"
     "@scure/bip39" "1.2.1"
     abitype "0.9.8"
+    isows "1.0.3"
+    ws "8.13.0"
+
+viem@^2.7.9:
+  version "2.7.9"
+  resolved "https://registry.yarnpkg.com/viem/-/viem-2.7.9.tgz#0d2b0c4722530b53fbef449d70f0cedc1bb867b0"
+  integrity sha512-iDfc8TwaZFp1K95zlsxYh6Cs0OWCt35Tqs8uYgXKSxtz7w075mZ0H5SJ8zSyJGoEaticVDhtdmRRX6TtcW9EeQ==
+  dependencies:
+    "@adraffy/ens-normalize" "1.10.0"
+    "@noble/curves" "1.2.0"
+    "@noble/hashes" "1.3.2"
+    "@scure/bip32" "1.3.2"
+    "@scure/bip39" "1.2.1"
+    abitype "1.0.0"
     isows "1.0.3"
     ws "8.13.0"
 
