@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {IPCSV3NonfungiblePositionManager} from "@aperture_finance/uni-v3-lib/src/interfaces/INonfungiblePositionManager.sol";
+import {PoolAddress} from "@aperture_finance/uni-v3-lib/src/PoolAddress.sol";
+import {PoolAddressPancakeSwapV3} from "@aperture_finance/uni-v3-lib/src/PoolAddressPancakeSwapV3.sol";
+import {IPancakeV3Pool} from "@pancakeswap/v3-core/contracts/interfaces/IPancakeV3Pool.sol";
 import "contracts/EphemeralAllPositionsByOwner.sol";
 import "contracts/EphemeralGetPosition.sol";
 import "contracts/EphemeralGetPositions.sol";
@@ -13,7 +17,7 @@ contract PositionLensTest is BaseTest {
     int24 internal _tickUpper;
     uint256 internal lastTokenId;
 
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
         lastTokenId = npm.totalSupply();
         positionLens = new PositionLens();
@@ -84,7 +88,7 @@ contract PositionLensTest is BaseTest {
         assertEq(collect1, amount1);
     }
 
-    function verifyPosition(PositionState memory pos) internal {
+    function verifyPosition(PositionState memory pos) internal virtual {
         {
             assertEq(pos.owner, npm.ownerOf(pos.tokenId), "owner");
             (, , address token0, , uint24 fee, int24 tickLower, , uint128 liquidity, , , , ) = npm.positions(
@@ -104,9 +108,22 @@ contract PositionLensTest is BaseTest {
                     pos.position.fee
                 )
             );
-            (uint160 sqrtPriceX96, int24 tick, , , , , ) = pool.slot0();
+            (
+                uint160 sqrtPriceX96,
+                int24 tick,
+                uint16 observationIndex,
+                uint16 observationCardinality,
+                uint16 observationCardinalityNext,
+                uint32 feeProtocol,
+                bool unlocked
+            ) = pool.slot0();
             assertEq(sqrtPriceX96, pos.slot0.sqrtPriceX96, "sqrtPriceX96");
             assertEq(tick, pos.slot0.tick, "tick");
+            assertEq(observationIndex, pos.slot0.observationIndex, "observationIndex");
+            assertEq(observationCardinality, pos.slot0.observationCardinality, "observationCardinality");
+            assertEq(observationCardinalityNext, pos.slot0.observationCardinalityNext, "observationCardinalityNext");
+            assertEq(feeProtocol, pos.slot0.feeProtocol, "feeProtocol");
+            assertEq(unlocked, pos.slot0.unlocked, "unlocked");
             assertEq(pool.liquidity(), pos.activeLiquidity, "liquidity");
         }
         assertEq(IERC20Metadata(pos.position.token0).decimals(), pos.decimals0, "decimals0");
@@ -115,7 +132,7 @@ contract PositionLensTest is BaseTest {
 
     /// forge-config: default.fuzz.runs = 16
     /// forge-config: ci.fuzz.runs = 16
-    function testFuzz_GetPosition(uint256 tokenId) public {
+    function testFuzz_GetPosition(uint256 tokenId) public virtual {
         tokenId = bound(tokenId, 1, 10000);
         try new EphemeralGetPosition(npm, tokenId) {} catch (bytes memory returnData) {
             PositionState memory pos = abi.decode(returnData, (PositionState));
@@ -123,7 +140,7 @@ contract PositionLensTest is BaseTest {
         }
     }
 
-    function test_GetPositions() public {
+    function test_GetPositions() public virtual {
         uint256 startTokenId = 10000;
         uint256[] memory tokenIds = new uint256[](10);
         for (uint256 i; i < 10; ++i) {
@@ -139,10 +156,98 @@ contract PositionLensTest is BaseTest {
         }
     }
 
-    function test_AllPositions() public {
+    function test_AllPositions() public virtual {
         address owner = npm.ownerOf(lastTokenId);
         try new EphemeralAllPositionsByOwner(npm, owner) {} catch (bytes memory returnData) {
             PositionState[] memory positions = abi.decode(returnData, (PositionState[]));
+            uint256 length = positions.length;
+            console2.log("balance", length);
+            for (uint256 i; i < length; ++i) {
+                verifyPosition(positions[i]);
+            }
+        }
+    }
+}
+
+contract PCSV3PositionLensTest is PositionLensTest {
+    function setUp() public override {
+        npm = INPM(0x46A15B0b27311cedF172AB29E4f4766fbE7F4364);
+        super.setUp();
+    }
+
+    function verifyPosition(PCSV3PositionState memory pos) internal {
+        {
+            assertEq(pos.owner, npm.ownerOf(pos.tokenId), "owner");
+            (, , address token0, , uint24 fee, int24 tickLower, , uint128 liquidity, , , , ) = npm.positions(
+                pos.tokenId
+            );
+            assertEq(token0, pos.position.token0, "token0");
+            assertEq(fee, pos.position.fee, "fee");
+            assertEq(tickLower, pos.position.tickLower, "tickLower");
+            assertEq(liquidity, pos.position.liquidity, "liquidity");
+        }
+        {
+            IPancakeV3Pool pool = IPancakeV3Pool(
+                PoolAddressPancakeSwapV3.computeAddressSorted(
+                    // PCSV3 deployer contract address
+                    0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9,
+                    pos.position.token0,
+                    pos.position.token1,
+                    pos.position.fee
+                )
+            );
+            (
+                uint160 sqrtPriceX96,
+                int24 tick,
+                uint16 observationIndex,
+                uint16 observationCardinality,
+                uint16 observationCardinalityNext,
+                uint32 feeProtocol,
+                bool unlocked
+            ) = pool.slot0();
+            assertEq(sqrtPriceX96, pos.slot0.sqrtPriceX96, "sqrtPriceX96");
+            assertEq(tick, pos.slot0.tick, "tick");
+            assertEq(observationIndex, pos.slot0.observationIndex, "observationIndex");
+            assertEq(observationCardinality, pos.slot0.observationCardinality, "observationCardinality");
+            assertEq(observationCardinalityNext, pos.slot0.observationCardinalityNext, "observationCardinalityNext");
+            assertEq(feeProtocol, pos.slot0.feeProtocol, "feeProtocol");
+            assertEq(unlocked, pos.slot0.unlocked, "unlocked");
+            assertEq(pool.liquidity(), pos.activeLiquidity, "liquidity");
+        }
+        assertEq(IERC20Metadata(pos.position.token0).decimals(), pos.decimals0, "decimals0");
+        assertEq(IERC20Metadata(pos.position.token1).decimals(), pos.decimals1, "decimals1");
+    }
+
+    /// forge-config: default.fuzz.runs = 16
+    /// forge-config: ci.fuzz.runs = 16
+    function testFuzz_GetPosition(uint256 tokenId) public override {
+        tokenId = bound(tokenId, 1, 300);
+        try new PCSV3EphemeralGetPosition(npm, tokenId) {} catch (bytes memory returnData) {
+            PCSV3PositionState memory pos = abi.decode(returnData, (PCSV3PositionState));
+            verifyPosition(pos);
+        }
+    }
+
+    function test_GetPositions() public override {
+        uint256 startTokenId = 100;
+        uint256[] memory tokenIds = new uint256[](10);
+        for (uint256 i; i < 10; ++i) {
+            tokenIds[i] = startTokenId + i;
+        }
+        try new PCSV3EphemeralGetPositions(npm, tokenIds) {} catch (bytes memory returnData) {
+            PCSV3PositionState[] memory positions = abi.decode(returnData, (PCSV3PositionState[]));
+            uint256 length = positions.length;
+            console2.log("length", length);
+            for (uint256 i; i < length; ++i) {
+                verifyPosition(positions[i]);
+            }
+        }
+    }
+
+    function test_AllPositions() public override {
+        address owner = npm.ownerOf(lastTokenId);
+        try new PCSV3EphemeralAllPositionsByOwner(npm, owner) {} catch (bytes memory returnData) {
+            PCSV3PositionState[] memory positions = abi.decode(returnData, (PCSV3PositionState[]));
             uint256 length = positions.length;
             console2.log("balance", length);
             for (uint256 i; i < length; ++i) {
