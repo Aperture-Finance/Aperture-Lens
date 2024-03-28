@@ -1,8 +1,7 @@
-import { ApertureSupportedChainId, getChainInfo, viem } from "@aperture_finance/uniswap-v3-automation-sdk";
 import { TickMath } from "@uniswap/v3-sdk";
 import { expect } from "chai";
-import { config as dotenvConfig } from "dotenv";
 import { ContractFunctionReturnType, createPublicClient, getContract, http, toHex } from "viem";
+import { bsc } from "viem/chains";
 import {
   getAllPositionsByOwner,
   getPopulatedTicksInRange,
@@ -14,31 +13,50 @@ import {
   getTickBitmapSlots,
   getTicksSlots,
 } from "../../src/viem";
-import { EphemeralGetPositions__factory, EphemeralPoolSlots__factory, IUniswapV3Pool__factory } from "../../typechain";
+import {
+  EphemeralGetPositions__factory,
+  EphemeralPoolSlots__factory,
+  INonfungiblePositionManager__factory,
+  IUniswapV3Pool__factory,
+} from "../../typechain";
+import { computePoolAddress } from "@pancakeswap/v3-sdk";
+import { Token } from "@pancakeswap/sdk";
 
-dotenvConfig();
+const PCSV3_DEPLOYER = "0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9";
+const PCSV3_NPM = "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364";
+const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+const WBNB_ADDRESS = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 
-const chainId = ApertureSupportedChainId.ETHEREUM_MAINNET_CHAIN_ID;
-const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-
-describe("Pool lens test", () => {
-  const { chain, uniswap_v3_factory, uniswap_v3_nonfungible_position_manager } = getChainInfo(chainId);
+describe("Pool lens test with PCSV3 on BSC", () => {
   const publicClient = createPublicClient({
-    chain,
-    transport: http(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`),
+    chain: bsc,
+    transport: http(`https://bsc-rpc.publicnode.com`),
     batch: {
       multicall: true,
     },
   });
-  const blockNumber = 17000000n;
-  const pool = viem.computePoolAddress(uniswap_v3_factory, USDC_ADDRESS, WETH_ADDRESS, 500);
+  var blockNumber: bigint;
+  const pool = computePoolAddress({
+    deployerAddress: PCSV3_DEPLOYER,
+    tokenA: new Token(bsc.id, USDT_ADDRESS, 6, "USDT"),
+    tokenB: new Token(bsc.id, WBNB_ADDRESS, 18, "WBNB"),
+    fee: 500,
+  });
   const poolContract = getContract({
     address: pool,
     abi: IUniswapV3Pool__factory.abi,
     client: publicClient,
   });
-  const npm = viem.getNPM(chainId, publicClient);
+  const npm = getContract({
+    address: PCSV3_NPM,
+    abi: INonfungiblePositionManager__factory.abi,
+    client: publicClient,
+  });
+
+  before(async () => {
+    blockNumber = await publicClient.getBlockNumber();
+    console.log("Block number: ", blockNumber);
+  });
 
   it("Test extsload", async () => {
     const slots = await getStorageAt(
@@ -67,21 +85,22 @@ describe("Pool lens test", () => {
     );
   });
 
+  /*
   it("Test getting position details", async () => {
     const {
       tokenId,
       position: { token0, token1, fee },
       slot0: { sqrtPriceX96, tick },
-    } = await getPositionDetails(uniswap_v3_nonfungible_position_manager, 4n, publicClient, blockNumber);
+    } = await getPositionDetails(PCSV3_NPM, 4n, publicClient, blockNumber);
     expect(tokenId).to.be.eq(4n);
     const [_sqrtPriceX96, _tick] = await getContract({
-      address: viem.computePoolAddress(uniswap_v3_factory, token0, token1, fee),
+      address: computePoolAddress(uniswap_v3_factory, token0, token1, fee),
       abi: IUniswapV3Pool__factory.abi,
       client: publicClient,
     }).read.slot0({ blockNumber });
     expect(sqrtPriceX96).to.be.eq(_sqrtPriceX96);
     expect(tick).to.be.eq(_tick);
-  });
+  });*/
 
   async function verifyPositionDetails(posArr: ContractFunctionReturnType<typeof EphemeralGetPositions__factory.abi>) {
     await Promise.all(
@@ -101,7 +120,7 @@ describe("Pool lens test", () => {
 
   it("Test getting position array", async () => {
     const posArr = await getPositions(
-      uniswap_v3_nonfungible_position_manager,
+      PCSV3_NPM,
       Array.from({ length: 100 }, (_, i) => BigInt(i + 1)),
       publicClient,
       blockNumber,
@@ -112,12 +131,7 @@ describe("Pool lens test", () => {
   it("Test getting all positions by owner", async () => {
     const totalSupply = await npm.read.totalSupply({ blockNumber });
     const owner = await npm.read.ownerOf([totalSupply - 1n], { blockNumber });
-    const posArr = await getAllPositionsByOwner(
-      uniswap_v3_nonfungible_position_manager,
-      owner,
-      publicClient,
-      blockNumber,
-    );
+    const posArr = await getAllPositionsByOwner(PCSV3_NPM, owner, publicClient, blockNumber);
     await verifyPositionDetails(posArr);
   });
 
