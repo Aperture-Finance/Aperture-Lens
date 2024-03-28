@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@pancakeswap/v3-core/contracts/interfaces/IPancakeV3Factory.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "contracts/EphemeralGetPopulatedTicksInRange.sol";
 import "./Base.t.sol";
@@ -39,5 +40,12 @@ contract TickLensTest is BaseTest, PoolUtils {
             console2.log("length", populatedTicks.length);
             verifyTicks(populatedTicks);
         }
+    }
+}
+
+contract PCSV3TickLensTest is TickLensTest {
+    function initPoolInfo() internal override {
+        pool = IPancakeV3Factory(0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865).getPool(token0, token1, fee);
+        tickSpacing = V3PoolCallee.wrap(pool).tickSpacing();
     }
 }
