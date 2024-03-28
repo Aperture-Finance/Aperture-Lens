@@ -78,10 +78,14 @@ abstract contract BaseTest is
         factory = npm.factory();
         WETH = npm.WETH9();
         (token0, token1) = (WETH < USDC).switchIf(USDC, WETH);
-        pool = IUniswapV3Factory(factory).getPool(token0, token1, fee);
-        tickSpacing = V3PoolCallee.wrap(pool).tickSpacing();
+        initPoolInfo();
         token0Unit = 10 ** IERC20Metadata(token0).decimals();
         token1Unit = 10 ** IERC20Metadata(token1).decimals();
+    }
+
+    function initPoolInfo() internal virtual {
+        pool = IUniswapV3Factory(factory).getPool(token0, token1, fee);
+        tickSpacing = V3PoolCallee.wrap(pool).tickSpacing();
     }
 
     function setUp() public virtual {
