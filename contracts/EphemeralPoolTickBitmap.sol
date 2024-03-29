@@ -17,6 +17,11 @@ contract EphemeralPoolTickBitmap is PoolUtils {
         }
     }
 
+    function getTickBitmapSlot() internal pure virtual returns (uint256) {
+        // Storage slot of the `tickBitmap` mapping in UniswapV3Pool.
+        return 6;
+    }
+
     /// @notice Get the tick bitmap for a pool
     /// @dev Public function to expose the abi for easier decoding using TypeChain
     /// @param pool The address of the pool for which to fetch the tick bitmap
@@ -25,6 +30,7 @@ contract EphemeralPoolTickBitmap is PoolUtils {
         // checks that the pool exists
         int24 tickSpacing = IUniswapV3Pool(V3PoolCallee.unwrap(pool)).tickSpacing();
         (int16 wordPosLower, int16 wordPosUpper) = getWordPositions(TickMath.MIN_TICK, TickMath.MAX_TICK, tickSpacing);
+        uint256 TICKBITMAP_SLOT = getTickBitmapSlot();
         unchecked {
             // cache the bitmap and calculate the number of populated ticks
             slots = new Slot[](uint16(wordPosUpper - wordPosLower + 1));
@@ -40,5 +46,14 @@ contract EphemeralPoolTickBitmap is PoolUtils {
                 slots[uint16(wordPos - wordPosLower)] = Slot(slot, pool.tickBitmap(wordPos));
             }
         }
+    }
+}
+
+contract EphemeralPCSV3PoolTickBitmap is EphemeralPoolTickBitmap {
+    constructor(V3PoolCallee pool) payable EphemeralPoolTickBitmap(pool) {}
+
+    function getTickBitmapSlot() internal pure override returns (uint256) {
+        // Storage slot of the `tickBitmap` mapping in PancakeSwapV3Pool.
+        return 7;
     }
 }

@@ -14,18 +14,6 @@ abstract contract PoolUtils {
 
     uint256 internal constant Q128 = 1 << 128;
 
-    /// @dev Storage slot of the `ticks` mapping
-    uint256 internal constant TICKS_SLOT = 5;
-
-    /// @dev Storage slot of the `tickBitmap` mapping
-    uint256 internal constant TICKBITMAP_SLOT = 6;
-
-    /// @dev Storage slot of the `positions` mapping
-    uint256 internal constant POSITIONS_SLOT = 7;
-
-    /// @dev Storage slot of the `observations` mapping
-    uint256 internal constant OBSERVATIONS_SLOT = 8;
-
     /// @notice Struct for a storage slot and its raw data
     struct Slot {
         uint256 slot;

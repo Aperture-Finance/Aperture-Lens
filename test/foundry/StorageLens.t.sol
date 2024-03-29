@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@pancakeswap/v3-core/contracts/interfaces/IPancakeV3Factory.sol";
 import "contracts/EphemeralStorageLens.sol";
 import "./Base.t.sol";
 
@@ -29,5 +30,12 @@ contract StorageLensTest is BaseTest {
         slots[0] = slot;
         bytes32[] memory values = EphemeralStorageLens(pool).extsload(slots);
         assertEq(values[0], vm.load(pool, slot));
+    }
+}
+
+contract PCSV3StorageLensTest is StorageLensTest {
+    function initPoolInfo() internal override {
+        pool = IPancakeV3Factory(0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865).getPool(token0, token1, fee);
+        tickSpacing = V3PoolCallee.wrap(pool).tickSpacing();
     }
 }

@@ -16,6 +16,11 @@ contract EphemeralPoolTicks is PoolUtils {
         }
     }
 
+    function getTicksSlot() internal pure virtual returns (uint256) {
+        // Storage slot of the `ticks` mapping in UniswapV3Pool.
+        return 5;
+    }
+
     /// @notice Get all the tick data for the populated ticks from tickLower to tickUpper
     /// @dev Public function to expose the abi for easier decoding using TypeChain
     /// @param pool The address of the pool for which to fetch populated tick data
@@ -60,6 +65,7 @@ contract EphemeralPoolTicks is PoolUtils {
         uint256 idx
     ) internal view returns (uint256) {
         unchecked {
+            uint256 TICKS_SLOT = getTicksSlot();
             for (uint256 bitPos; bitPos < 256; ++bitPos) {
                 //slither-disable-next-line incorrect-shift
                 if (bitmap & (1 << bitPos) != 0) {
@@ -105,5 +111,18 @@ contract EphemeralPoolTicks is PoolUtils {
             }
             return idx;
         }
+    }
+}
+
+contract EphemeralPCSV3PoolTicks is EphemeralPoolTicks {
+    constructor(
+        V3PoolCallee pool,
+        int24 tickLower,
+        int24 tickUpper
+    ) payable EphemeralPoolTicks(pool, tickLower, tickUpper) {}
+
+    function getTicksSlot() internal pure override returns (uint256) {
+        // Storage slot of the `ticks` mapping in PancakeSwapV3Pool.
+        return 6;
     }
 }

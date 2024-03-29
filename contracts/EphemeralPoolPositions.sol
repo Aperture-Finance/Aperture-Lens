@@ -16,6 +16,11 @@ contract EphemeralPoolPositions is PoolUtils {
         }
     }
 
+    function getPositionsSlot() internal pure virtual returns (uint256) {
+        // Storage slot of the `positions` mapping in UniswapV3Pool.
+        return 7;
+    }
+
     /// @notice Get liquidity positions in a pool
     /// @dev Public function to expose the abi for easier decoding using TypeChain
     /// @param pool The address of the pool for which to fetch the tick bitmap
@@ -23,6 +28,7 @@ contract EphemeralPoolPositions is PoolUtils {
     /// @return slots An array of storage slots and their raw data
     function getPositions(V3PoolCallee pool, PositionKey[] memory keys) public payable returns (Slot[] memory slots) {
         unchecked {
+            uint256 POSITIONS_SLOT = getPositionsSlot();
             uint256 length = keys.length;
             // each position occupies 4 storage slots
             slots = new Slot[](length << 2);
@@ -48,5 +54,14 @@ contract EphemeralPoolPositions is PoolUtils {
                 slots[j++] = Slot(slot, data);
             }
         }
+    }
+}
+
+contract EphemeralPCSV3PoolPositions is EphemeralPoolPositions {
+    constructor(V3PoolCallee pool, PositionKey[] memory keys) payable EphemeralPoolPositions(pool, keys) {}
+
+    function getPositionsSlot() internal pure override returns (uint256) {
+        // Storage slot of the `positions` mapping in PancakeSwapV3Pool.
+        return 8;
     }
 }
