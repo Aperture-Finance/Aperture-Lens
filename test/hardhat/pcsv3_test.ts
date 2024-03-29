@@ -55,7 +55,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
 
   before(async () => {
     blockNumber = await publicClient.getBlockNumber();
-    console.log("Block number: ", blockNumber);
+    console.log(`Running PCSV3 tests on the BNB chain at block number ${blockNumber}...`);
   });
 
   it("Test extsload", async () => {
@@ -147,17 +147,24 @@ describe("Pool lens test with PCSV3 on BSC", () => {
   }
 
   it("Test getting static storage slots", async () => {
-    const slots = await getStaticSlots(pool, publicClient, blockNumber);
+    const slots = await getStaticSlots(pool, publicClient, blockNumber, /*pcsV3InsteadOfUniV3=*/ true);
     await verifySlots(slots);
   });
 
   it("Test getting populated ticks slots", async () => {
-    const slots = await getTicksSlots(pool, TickMath.MIN_TICK, TickMath.MAX_TICK, publicClient, blockNumber);
+    const slots = await getTicksSlots(
+      pool,
+      TickMath.MIN_TICK,
+      TickMath.MAX_TICK,
+      publicClient,
+      blockNumber,
+      /*pcsV3InsteadOfUniV3=*/ true,
+    );
     await verifySlots(slots);
   });
 
   it("Test getting tick bitmap slots", async () => {
-    const slots = await getTickBitmapSlots(pool, publicClient, blockNumber);
+    const slots = await getTickBitmapSlots(pool, publicClient, blockNumber, /*pcsV3InsteadOfUniV3=*/ true);
     await verifySlots(slots);
   });
 
@@ -174,7 +181,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
       tickLower: tickLower!,
       tickUpper: tickUpper!,
     }));
-    const slots = await getPositionsSlots(pool, positions, publicClient, blockNumber);
+    const slots = await getPositionsSlots(pool, positions, publicClient, blockNumber, /*pcsV3InsteadOfUniV3=*/ true);
     await verifySlots(slots);
   });
 });
