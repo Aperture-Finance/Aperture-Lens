@@ -36,7 +36,6 @@ contract EphemeralAllPositionsByOwner is PositionUtils {
     }
 }
 
-
 /// @notice A lens for PancakeSwap v3 that peeks into the current state of all positions by an owner without deployment
 /// @author Aperture Finance
 /// @dev The return data can be accessed externally by `eth_call` without a `to` address or internally by catching the
