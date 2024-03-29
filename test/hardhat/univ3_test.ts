@@ -26,12 +26,12 @@ describe("Pool lens test with UniV3 on mainnet", () => {
   const { chain, uniswap_v3_factory, uniswap_v3_nonfungible_position_manager } = getChainInfo(chainId);
   const publicClient = createPublicClient({
     chain,
-    transport: http(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`),
+    transport: http("https://ethereum-rpc.publicnode.com"),
     batch: {
       multicall: true,
     },
   });
-  const blockNumber = 17000000n;
+  let blockNumber: bigint;
   const pool = viem.computePoolAddress(uniswap_v3_factory, USDC_ADDRESS, WETH_ADDRESS, 500);
   const poolContract = getContract({
     address: pool,
@@ -39,6 +39,11 @@ describe("Pool lens test with UniV3 on mainnet", () => {
     client: publicClient,
   });
   const npm = viem.getNPM(chainId, publicClient);
+
+  before(async () => {
+    blockNumber = await publicClient.getBlockNumber();
+    console.log(`Running UniV3 tests on Ethereum mainnet at block number ${blockNumber}...`);
+  });
 
   it("Test extsload", async () => {
     const slots = await getStorageAt(
