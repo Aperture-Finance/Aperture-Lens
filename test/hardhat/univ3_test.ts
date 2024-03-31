@@ -1,8 +1,6 @@
-import { ApertureSupportedChainId, getChainInfo, viem } from "@aperture_finance/uniswap-v3-automation-sdk";
-import { TickMath } from "@uniswap/v3-sdk";
+import { TickMath, computePoolAddress } from "@uniswap/v3-sdk";
 import { expect } from "chai";
-import { config as dotenvConfig } from "dotenv";
-import { ContractFunctionReturnType, createPublicClient, getContract, http, toHex } from "viem";
+import { Address, ContractFunctionReturnType, createPublicClient, getContract, http, toHex } from "viem";
 import {
   getAllPositionsByOwner,
   getPopulatedTicksInRange,
@@ -14,34 +12,48 @@ import {
   getTickBitmapSlots,
   getTicksSlots,
 } from "../../src/viem";
-import { EphemeralGetPositions__factory, EphemeralPoolSlots__factory, IUniswapV3Pool__factory } from "../../typechain";
+import {
+  EphemeralGetPositions__factory,
+  EphemeralPoolSlots__factory,
+  INonfungiblePositionManager__factory,
+  IUniswapV3Pool__factory,
+} from "../../typechain";
+import { mainnet } from "viem/chains";
+import { Token } from "@uniswap/sdk-core";
 
-dotenvConfig();
-
-const chainId = ApertureSupportedChainId.ETHEREUM_MAINNET_CHAIN_ID;
+const UNIV3_FACTORY = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
+const UNIV3_NPM = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88";
 const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
 describe("Pool lens test with UniV3 on mainnet", () => {
-  const { chain, uniswap_v3_factory, uniswap_v3_nonfungible_position_manager } = getChainInfo(chainId);
   const publicClient = createPublicClient({
-    chain,
+    chain: mainnet,
     transport: http("https://ethereum-rpc.publicnode.com"),
     batch: {
       multicall: true,
     },
   });
   let blockNumber: bigint;
-  const pool = viem.computePoolAddress(uniswap_v3_factory, USDC_ADDRESS, WETH_ADDRESS, 500);
+  const pool = computePoolAddress({
+    factoryAddress: UNIV3_FACTORY,
+    tokenA: new Token(mainnet.id, USDC_ADDRESS, 6, "USDC"),
+    tokenB: new Token(mainnet.id, WETH_ADDRESS, 18, "WETH"),
+    fee: 500,
+  }) as Address;
   const poolContract = getContract({
     address: pool,
     abi: IUniswapV3Pool__factory.abi,
     client: publicClient,
   });
-  const npm = viem.getNPM(chainId, publicClient);
+  const npm = getContract({
+    address: UNIV3_NPM,
+    abi: INonfungiblePositionManager__factory.abi,
+    client: publicClient,
+  });
 
   before(async () => {
-    blockNumber = await publicClient.getBlockNumber();
+    blockNumber = (await publicClient.getBlockNumber()) - 64n;
     console.log(`Running UniV3 tests on Ethereum mainnet at block number ${blockNumber}...`);
   });
 
@@ -77,10 +89,15 @@ describe("Pool lens test with UniV3 on mainnet", () => {
       tokenId,
       position: { token0, token1, fee },
       slot0: { sqrtPriceX96, tick },
-    } = await getPositionDetails(uniswap_v3_nonfungible_position_manager, 4n, publicClient, blockNumber);
+    } = await getPositionDetails(UNIV3_NPM, 4n, publicClient, blockNumber);
     expect(tokenId).to.be.eq(4n);
     const [_sqrtPriceX96, _tick] = await getContract({
-      address: viem.computePoolAddress(uniswap_v3_factory, token0, token1, fee),
+      address: computePoolAddress({
+        factoryAddress: UNIV3_FACTORY,
+        tokenA: new Token(mainnet.id, token0, 0, "NOT_USED"),
+        tokenB: new Token(mainnet.id, token1, 0, "NOT_USED"),
+        fee,
+      }) as Address,
       abi: IUniswapV3Pool__factory.abi,
       client: publicClient,
     }).read.slot0({ blockNumber });
@@ -106,7 +123,7 @@ describe("Pool lens test with UniV3 on mainnet", () => {
 
   it("Test getting position array", async () => {
     const posArr = await getPositions(
-      uniswap_v3_nonfungible_position_manager,
+      UNIV3_NPM,
       Array.from({ length: 100 }, (_, i) => BigInt(i + 1)),
       publicClient,
       blockNumber,
@@ -117,12 +134,7 @@ describe("Pool lens test with UniV3 on mainnet", () => {
   it("Test getting all positions by owner", async () => {
     const totalSupply = await npm.read.totalSupply({ blockNumber });
     const owner = await npm.read.ownerOf([totalSupply - 1n], { blockNumber });
-    const posArr = await getAllPositionsByOwner(
-      uniswap_v3_nonfungible_position_manager,
-      owner,
-      publicClient,
-      blockNumber,
-    );
+    const posArr = await getAllPositionsByOwner(UNIV3_NPM, owner, publicClient, blockNumber);
     await verifyPositionDetails(posArr);
   });
 

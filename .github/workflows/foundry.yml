@@ -41,7 +41,16 @@ jobs:
           forge build
         id: build
 
-      - name: Run Forge tests
+      - name: Run Forge tests on Ethereum mainnet
         run: |
           forge test -vvv
-        id: test
+        env:
+          CHAIN_ID: 1
+        id: testMainnet
+
+      - name: Run Forge tests on BNB mainnet
+        run: |
+          forge test -vvv
+        env:
+          CHAIN_ID: 56
+        id: testBNB

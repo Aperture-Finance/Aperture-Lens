@@ -95,7 +95,7 @@ contract EphemeralPCSV3PoolSlots is PoolUtils {
 
     /// @notice Get the static storage slots of a pool
     /// @dev Public function to expose the abi for easier decoding using TypeChain
-    /// @param pool The Uniswap v3 pool
+    /// @param pool The PancakeSwap v3 pool
     /// @return slots An array of storage slots and their raw data
     function getSlots(V3PoolCallee pool) public payable returns (Slot[] memory slots) {
         unchecked {
@@ -116,7 +116,7 @@ contract EphemeralPCSV3PoolSlots is PoolUtils {
                 uint256 slot0;
                 uint256 slot1;
                 assembly {
-                    slot0 := or(shl(216, observationCardinalityNext), slot0)
+                    slot0 := shl(216, observationCardinalityNext)
                     slot0 := or(shl(200, observationCardinality), slot0)
                     slot0 := or(shl(184, observationIndex), slot0)
                     slot0 := or(shl(160, and(0xffffff, tick)), slot0)

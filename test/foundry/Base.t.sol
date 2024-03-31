@@ -17,6 +17,11 @@ import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.so
 import "forge-std/Test.sol";
 import "solady/src/utils/SafeTransferLib.sol";
 
+enum DEX {
+    UniswapV3,
+    PancakeSwapV3
+}
+
 abstract contract BaseTest is
     Test,
     IPancakeV3MintCallback,
@@ -33,8 +38,10 @@ abstract contract BaseTest is
     uint160 internal constant MIN_SQRT_RATIO_PLUS_ONE = TickMath.MIN_SQRT_RATIO + 1;
     uint160 internal constant MAX_SQRT_RATIO_MINUS_ONE = 1461446703485210103287273052203988822378723970342 - 1;
 
+    DEX internal dex;
+
     // Uniswap v3 position manager
-    INPM internal npm = INPM(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
+    INPM internal npm;
 
     uint256 internal chainId;
     address internal WETH;
@@ -59,15 +66,15 @@ abstract contract BaseTest is
         if (chainId == 1) {
             blockNumber = 17000000;
             USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-        } else if (chainId == 5) {
-            blockNumber = 9000000;
-            USDC = 0xD87Ba7A50B2E7E660f678A895E4B72E7CB4CCd9C;
-        } else if (chainId == 10) {
-            blockNumber = 20000000;
-            USDC = 0x7F5c764cBc14f9669B88837ca1490cCa17c31607;
-        } else if (chainId == 42161) {
-            blockNumber = 70000000;
-            USDC = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
+            npm = dex == DEX.PancakeSwapV3
+                ? INPM(0x46A15B0b27311cedF172AB29E4f4766fbE7F4364)
+                : INPM(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
+        } else if (chainId == 56) {
+            blockNumber = 37460000;
+            USDC = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
+            npm = dex == DEX.PancakeSwapV3
+                ? INPM(0x46A15B0b27311cedF172AB29E4f4766fbE7F4364)
+                : INPM(0x7b8A01B39D58278b5DE7e48c8449c9f4F5170613);
         } else {
             revert("Unsupported chain");
         }
@@ -78,14 +85,10 @@ abstract contract BaseTest is
         factory = npm.factory();
         WETH = npm.WETH9();
         (token0, token1) = (WETH < USDC).switchIf(USDC, WETH);
-        initPoolInfo();
-        token0Unit = 10 ** IERC20Metadata(token0).decimals();
-        token1Unit = 10 ** IERC20Metadata(token1).decimals();
-    }
-
-    function initPoolInfo() internal virtual {
         pool = IUniswapV3Factory(factory).getPool(token0, token1, fee);
         tickSpacing = V3PoolCallee.wrap(pool).tickSpacing();
+        token0Unit = 10 ** IERC20Metadata(token0).decimals();
+        token1Unit = 10 ** IERC20Metadata(token1).decimals();
     }
 
     function setUp() public virtual {
