@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {INonfungiblePositionManager as INPM} from "@aperture_finance/uni-v3-lib/src/interfaces/INonfungiblePositionManager.sol";
+import {INonfungiblePositionManager as INPM, IPCSV3NonfungiblePositionManager as IPCSV3NPM} from "@aperture_finance/uni-v3-lib/src/interfaces/INonfungiblePositionManager.sol";
 import {NPMCaller, PositionFull} from "@aperture_finance/uni-v3-lib/src/NPMCaller.sol";
 import {PoolAddress} from "@aperture_finance/uni-v3-lib/src/PoolAddress.sol";
+import {PoolAddressPancakeSwapV3} from "@aperture_finance/uni-v3-lib/src/PoolAddressPancakeSwapV3.sol";
 import {IUniswapV3PoolState, V3PoolCallee} from "@aperture_finance/uni-v3-lib/src/PoolCaller.sol";
+import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import {ERC20Callee} from "./libraries/ERC20Caller.sol";
 import {PoolUtils} from "./PoolUtils.sol";
 
@@ -14,7 +16,9 @@ struct Slot0 {
     uint16 observationIndex;
     uint16 observationCardinality;
     uint16 observationCardinalityNext;
-    uint8 feeProtocol;
+    // `feeProtocol` is of type uint8 in Uniswap V3, and uint32 in PancakeSwap V3.
+    // We use uint32 here as this can hold both uint8 and uint32.
+    uint32 feeProtocol;
     bool unlocked;
 }
 
@@ -49,7 +53,7 @@ abstract contract PositionUtils is PoolUtils {
         state.tokenId = tokenId;
         PositionFull memory position = state.position;
         V3PoolCallee pool = V3PoolCallee.wrap(
-            PoolAddress.computeAddressSorted(NPMCaller.factory(npm), position.token0, position.token1, position.fee)
+            IUniswapV3Factory(NPMCaller.factory(npm)).getPool(position.token0, position.token1, position.fee)
         );
         state.activeLiquidity = pool.liquidity();
         slot0InPlace(pool, state.slot0);
