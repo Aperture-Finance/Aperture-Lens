@@ -6,7 +6,7 @@ import "contracts/EphemeralStorageLens.sol";
 import "./Base.t.sol";
 
 contract StorageLensTest is BaseTest {
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
         vm.etch(pool, vm.getDeployedCode("EphemeralStorageLens.sol"));
     }
@@ -34,8 +34,8 @@ contract StorageLensTest is BaseTest {
 }
 
 contract PCSV3StorageLensTest is StorageLensTest {
-    function initPoolInfo() internal override {
-        pool = IPancakeV3Factory(0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865).getPool(token0, token1, fee);
-        tickSpacing = V3PoolCallee.wrap(pool).tickSpacing();
+    function setUp() public override {
+        dex = DEX.PancakeSwapV3;
+        super.setUp();
     }
 }

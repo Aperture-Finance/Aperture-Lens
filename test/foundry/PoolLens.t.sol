@@ -71,9 +71,9 @@ contract PoolLensTest is BaseTest, PoolUtils {
 }
 
 contract PCSV3PoolLensTest is BaseTest, PoolUtils {
-    function initPoolInfo() internal override {
-        pool = IPancakeV3Factory(0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865).getPool(token0, token1, fee);
-        tickSpacing = V3PoolCallee.wrap(pool).tickSpacing();
+    function setUp() public override {
+        dex = DEX.PancakeSwapV3;
+        super.setUp();
     }
 
     function test_GetSlots() public {

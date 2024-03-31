@@ -88,25 +88,6 @@ contract PositionLensTest is BaseTest {
         assertEq(collect1, amount1);
     }
 
-    function getPoolSlot0(
-        address pool
-    )
-        internal
-        view
-        virtual
-        returns (
-            uint160 sqrtPriceX96,
-            int24 tick,
-            uint16 observationIndex,
-            uint16 observationCardinality,
-            uint16 observationCardinalityNext,
-            uint32 feeProtocol,
-            bool unlocked
-        )
-    {
-        return IUniswapV3Pool(pool).slot0();
-    }
-
     function verifyPosition(PositionState memory pos) internal {
         {
             assertEq(pos.owner, npm.ownerOf(pos.tokenId), "owner");
@@ -132,7 +113,7 @@ contract PositionLensTest is BaseTest {
                 uint16 observationCardinalityNext,
                 uint32 feeProtocol,
                 bool unlocked
-            ) = getPoolSlot0(pool);
+            ) = IPancakeV3Pool(pool).slot0();
             assertEq(sqrtPriceX96, pos.slot0.sqrtPriceX96, "sqrtPriceX96");
             assertEq(tick, pos.slot0.tick, "tick");
             assertEq(observationIndex, pos.slot0.observationIndex, "observationIndex");
@@ -187,36 +168,14 @@ contract PositionLensTest is BaseTest {
 
 contract PCSV3PositionLensTest is PositionLensTest {
     function setUp() public override {
-        npm = INPM(0x46A15B0b27311cedF172AB29E4f4766fbE7F4364);
+        dex = DEX.PancakeSwapV3;
         super.setUp();
     }
 
-    function getPoolSlot0(
-        address pool
-    )
-        internal
-        view
-        override
-        returns (
-            uint160 sqrtPriceX96,
-            int24 tick,
-            uint16 observationIndex,
-            uint16 observationCardinality,
-            uint16 observationCardinalityNext,
-            uint32 feeProtocol,
-            bool unlocked
-        )
-    {
-        return IPancakeV3Pool(pool).slot0();
-    }
-
+    // Trivially override so that the "forge-config" settings are applied.
     /// forge-config: default.fuzz.runs = 16
     /// forge-config: ci.fuzz.runs = 16
     function testFuzz_GetPosition(uint256 tokenId) public override {
-        tokenId = bound(tokenId, 1, 300);
-        try new EphemeralGetPosition(npm, tokenId) {} catch (bytes memory returnData) {
-            PositionState memory pos = abi.decode(returnData, (PositionState));
-            verifyPosition(pos);
-        }
+        super.testFuzz_GetPosition(tokenId);
     }
 }

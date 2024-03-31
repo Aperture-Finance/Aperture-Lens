@@ -17,7 +17,7 @@ import {
   EphemeralGetPositions__factory,
   EphemeralPoolSlots__factory,
   INonfungiblePositionManager__factory,
-  IUniswapV3Pool__factory,
+  IPancakeV3Pool__factory,
 } from "../../typechain";
 import { computePoolAddress } from "@pancakeswap/v3-sdk";
 import { Token } from "@pancakeswap/sdk";
@@ -44,7 +44,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
   });
   const poolContract = getContract({
     address: pool,
-    abi: IUniswapV3Pool__factory.abi,
+    abi: IPancakeV3Pool__factory.abi,
     client: publicClient,
   });
   const npm = getContract({
@@ -54,7 +54,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
   });
 
   before(async () => {
-    blockNumber = await publicClient.getBlockNumber();
+    blockNumber = (await publicClient.getBlockNumber()) - 64n;
     console.log(`Running PCSV3 tests on the BNB chain at block number ${blockNumber}...`);
   });
 
@@ -85,7 +85,6 @@ describe("Pool lens test with PCSV3 on BSC", () => {
     );
   });
 
-  /*
   it("Test getting position details", async () => {
     const {
       tokenId,
@@ -93,14 +92,20 @@ describe("Pool lens test with PCSV3 on BSC", () => {
       slot0: { sqrtPriceX96, tick },
     } = await getPositionDetails(PCSV3_NPM, 4n, publicClient, blockNumber);
     expect(tokenId).to.be.eq(4n);
+    const poolAddress = computePoolAddress({
+      deployerAddress: PCSV3_DEPLOYER,
+      tokenA: new Token(bsc.id, token0, 0, "NOT_USED"),
+      tokenB: new Token(bsc.id, token1, 0, "NOT_USED"),
+      fee,
+    });
     const [_sqrtPriceX96, _tick] = await getContract({
-      address: computePoolAddress(uniswap_v3_factory, token0, token1, fee),
-      abi: IUniswapV3Pool__factory.abi,
+      address: poolAddress,
+      abi: IPancakeV3Pool__factory.abi,
       client: publicClient,
     }).read.slot0({ blockNumber });
     expect(sqrtPriceX96).to.be.eq(_sqrtPriceX96);
     expect(tick).to.be.eq(_tick);
-  });*/
+  });
 
   async function verifyPositionDetails(posArr: ContractFunctionReturnType<typeof EphemeralGetPositions__factory.abi>) {
     await Promise.all(
