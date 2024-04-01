@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { ContractFunctionReturnType, createPublicClient, getContract, http, toHex } from "viem";
 import { bsc } from "viem/chains";
 import {
+  AutomatedMarketMakerEnum,
   getAllPositionsByOwner,
   getPopulatedTicksInRange,
   getPositionDetails,
@@ -21,10 +22,10 @@ import {
 } from "../../typechain";
 import { computePoolAddress } from "@pancakeswap/v3-sdk";
 import { Token } from "@pancakeswap/sdk";
-import { AutomatedMarketMakerEnum, getAMMInfo } from "@aperture_finance/uniswap-v3-automation-sdk";
 
 const AMM = AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3;
-const PCSV3_INFO = getAMMInfo(bsc.id, AMM)!;
+const PCSV3_NPM = "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364";
+const PCSV3_POOL_DEPLOYER = "0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9";
 const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
 const WBNB_ADDRESS = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 
@@ -38,7 +39,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
   });
   var blockNumber: bigint;
   const pool = computePoolAddress({
-    deployerAddress: PCSV3_INFO.poolDeployer!,
+    deployerAddress: PCSV3_POOL_DEPLOYER,
     tokenA: new Token(bsc.id, USDT_ADDRESS, 6, "USDT"),
     tokenB: new Token(bsc.id, WBNB_ADDRESS, 18, "WBNB"),
     fee: 500,
@@ -49,7 +50,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
     client: publicClient,
   });
   const npm = getContract({
-    address: PCSV3_INFO.nonfungiblePositionManager,
+    address: PCSV3_NPM,
     abi: INonfungiblePositionManager__factory.abi,
     client: publicClient,
   });
@@ -91,10 +92,10 @@ describe("Pool lens test with PCSV3 on BSC", () => {
       tokenId,
       position: { token0, token1, fee },
       slot0: { sqrtPriceX96, tick },
-    } = await getPositionDetails(PCSV3_INFO.nonfungiblePositionManager, 4n, publicClient, blockNumber);
+    } = await getPositionDetails(PCSV3_NPM, 4n, publicClient, blockNumber);
     expect(tokenId).to.be.eq(4n);
     const poolAddress = computePoolAddress({
-      deployerAddress: PCSV3_INFO.poolDeployer!,
+      deployerAddress: PCSV3_POOL_DEPLOYER,
       tokenA: new Token(bsc.id, token0, 0, "NOT_USED"),
       tokenB: new Token(bsc.id, token1, 0, "NOT_USED"),
       fee,
@@ -126,7 +127,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
 
   it("Test getting position array", async () => {
     const posArr = await getPositions(
-      PCSV3_INFO.nonfungiblePositionManager,
+      PCSV3_NPM,
       Array.from({ length: 100 }, (_, i) => BigInt(i + 1)),
       publicClient,
       blockNumber,
@@ -137,12 +138,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
   it("Test getting all positions by owner", async () => {
     const totalSupply = await npm.read.totalSupply({ blockNumber });
     const owner = await npm.read.ownerOf([totalSupply - 1n], { blockNumber });
-    const posArr = await getAllPositionsByOwner(
-      PCSV3_INFO.nonfungiblePositionManager,
-      owner,
-      publicClient,
-      blockNumber,
-    );
+    const posArr = await getAllPositionsByOwner(PCSV3_NPM, owner, publicClient, blockNumber);
     await verifyPositionDetails(posArr);
   });
 
