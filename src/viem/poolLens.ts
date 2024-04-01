@@ -12,6 +12,7 @@ import {
   EphemeralPoolTicks__factory,
 } from "../../typechain";
 import { callEphemeralContract } from "./caller";
+import { AutomatedMarketMakerEnum } from "@aperture_finance/uniswap-v3-automation-sdk";
 
 /**
  * Fetches the liquidity within the tick range for the specified pool by deploying an ephemeral contract via `eth_call`.
@@ -42,13 +43,13 @@ export async function getPopulatedTicksInRange(
 }
 
 export async function getStaticSlots(
+  amm: AutomatedMarketMakerEnum,
   pool: Address,
   publicClient: PublicClient,
   blockNumber?: bigint,
-  pcsV3InsteadOfUniV3 = false,
 ) {
   return await callEphemeralContract(
-    pcsV3InsteadOfUniV3
+    amm === AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3
       ? {
           abi: EphemeralPCSV3PoolSlots__factory.abi,
           bytecode: EphemeralPCSV3PoolSlots__factory.bytecode,
@@ -65,15 +66,15 @@ export async function getStaticSlots(
 }
 
 export async function getTicksSlots(
+  amm: AutomatedMarketMakerEnum,
   pool: Address,
   tickLower: number,
   tickUpper: number,
   publicClient: PublicClient,
   blockNumber?: bigint,
-  pcsV3InsteadOfUniV3 = false,
 ) {
   return await callEphemeralContract(
-    pcsV3InsteadOfUniV3
+    amm === AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3
       ? {
           abi: EphemeralPCSV3PoolTicks__factory.abi,
           bytecode: EphemeralPCSV3PoolTicks__factory.bytecode,
@@ -90,13 +91,13 @@ export async function getTicksSlots(
 }
 
 export async function getTickBitmapSlots(
+  amm: AutomatedMarketMakerEnum,
   pool: Address,
   publicClient: PublicClient,
   blockNumber?: bigint,
-  pcsV3InsteadOfUniV3 = false,
 ) {
   return await callEphemeralContract(
-    pcsV3InsteadOfUniV3
+    amm === AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3
       ? {
           abi: EphemeralPCSV3PoolTickBitmap__factory.abi,
           bytecode: EphemeralPCSV3PoolTickBitmap__factory.bytecode,
@@ -118,14 +119,14 @@ export type PositionKey = AbiParametersToPrimitiveTypes<
 >[1][0];
 
 export async function getPositionsSlots(
+  amm: AutomatedMarketMakerEnum,
   pool: Address,
   keys: PositionKey[],
   publicClient: PublicClient,
   blockNumber?: bigint,
-  pcsV3InsteadOfUniV3 = false,
 ) {
   return await callEphemeralContract(
-    pcsV3InsteadOfUniV3
+    amm === AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3
       ? {
           abi: EphemeralPCSV3PoolPositions__factory.abi,
           bytecode: EphemeralPCSV3PoolPositions__factory.bytecode,

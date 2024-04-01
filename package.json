@@ -47,10 +47,11 @@
     "typechain": "hardhat typechain"
   },
   "dependencies": {
+    "@aperture_finance/uniswap-v3-automation-sdk": "3.0.0-alpha",
     "@aperture_finance/uni-v3-lib": "^2.0.1",
     "@openzeppelin/contracts": "^5.0.2",
     "ethers": "5.7.2",
-    "viem": "^2.9.5"
+    "viem": "^2.9.6"
   },
   "devDependencies": {
     "@ethersproject/abi": "5.7.0",

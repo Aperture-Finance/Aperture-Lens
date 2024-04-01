@@ -20,9 +20,10 @@ import {
 } from "../../typechain";
 import { mainnet } from "viem/chains";
 import { Token } from "@uniswap/sdk-core";
+import { AutomatedMarketMakerEnum, getAMMInfo } from "@aperture_finance/uniswap-v3-automation-sdk";
 
-const UNIV3_FACTORY = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
-const UNIV3_NPM = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88";
+const AMM = AutomatedMarketMakerEnum.enum.UNISWAP_V3;
+const UNIV3_INFO = getAMMInfo(mainnet.id, AMM)!;
 const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
@@ -36,7 +37,7 @@ describe("Pool lens test with UniV3 on mainnet", () => {
   });
   let blockNumber: bigint;
   const pool = computePoolAddress({
-    factoryAddress: UNIV3_FACTORY,
+    factoryAddress: UNIV3_INFO.factory,
     tokenA: new Token(mainnet.id, USDC_ADDRESS, 6, "USDC"),
     tokenB: new Token(mainnet.id, WETH_ADDRESS, 18, "WETH"),
     fee: 500,
@@ -47,7 +48,7 @@ describe("Pool lens test with UniV3 on mainnet", () => {
     client: publicClient,
   });
   const npm = getContract({
-    address: UNIV3_NPM,
+    address: UNIV3_INFO.nonfungiblePositionManager,
     abi: INonfungiblePositionManager__factory.abi,
     client: publicClient,
   });
@@ -89,11 +90,11 @@ describe("Pool lens test with UniV3 on mainnet", () => {
       tokenId,
       position: { token0, token1, fee },
       slot0: { sqrtPriceX96, tick },
-    } = await getPositionDetails(UNIV3_NPM, 4n, publicClient, blockNumber);
+    } = await getPositionDetails(UNIV3_INFO.nonfungiblePositionManager, 4n, publicClient, blockNumber);
     expect(tokenId).to.be.eq(4n);
     const [_sqrtPriceX96, _tick] = await getContract({
       address: computePoolAddress({
-        factoryAddress: UNIV3_FACTORY,
+        factoryAddress: UNIV3_INFO.factory,
         tokenA: new Token(mainnet.id, token0, 0, "NOT_USED"),
         tokenB: new Token(mainnet.id, token1, 0, "NOT_USED"),
         fee,
@@ -123,7 +124,7 @@ describe("Pool lens test with UniV3 on mainnet", () => {
 
   it("Test getting position array", async () => {
     const posArr = await getPositions(
-      UNIV3_NPM,
+      UNIV3_INFO.nonfungiblePositionManager,
       Array.from({ length: 100 }, (_, i) => BigInt(i + 1)),
       publicClient,
       blockNumber,
@@ -134,7 +135,12 @@ describe("Pool lens test with UniV3 on mainnet", () => {
   it("Test getting all positions by owner", async () => {
     const totalSupply = await npm.read.totalSupply({ blockNumber });
     const owner = await npm.read.ownerOf([totalSupply - 1n], { blockNumber });
-    const posArr = await getAllPositionsByOwner(UNIV3_NPM, owner, publicClient, blockNumber);
+    const posArr = await getAllPositionsByOwner(
+      UNIV3_INFO.nonfungiblePositionManager,
+      owner,
+      publicClient,
+      blockNumber,
+    );
     await verifyPositionDetails(posArr);
   });
 
@@ -150,17 +156,17 @@ describe("Pool lens test with UniV3 on mainnet", () => {
   }
 
   it("Test getting static storage slots", async () => {
-    const slots = await getStaticSlots(pool, publicClient, blockNumber);
+    const slots = await getStaticSlots(AMM, pool, publicClient, blockNumber);
     await verifySlots(slots);
   });
 
   it("Test getting populated ticks slots", async () => {
-    const slots = await getTicksSlots(pool, TickMath.MIN_TICK, TickMath.MAX_TICK, publicClient, blockNumber);
+    const slots = await getTicksSlots(AMM, pool, TickMath.MIN_TICK, TickMath.MAX_TICK, publicClient, blockNumber);
     await verifySlots(slots);
   });
 
   it("Test getting tick bitmap slots", async () => {
-    const slots = await getTickBitmapSlots(pool, publicClient, blockNumber);
+    const slots = await getTickBitmapSlots(AMM, pool, publicClient, blockNumber);
     await verifySlots(slots);
   });
 
@@ -177,7 +183,7 @@ describe("Pool lens test with UniV3 on mainnet", () => {
       tickLower: tickLower!,
       tickUpper: tickUpper!,
     }));
-    const slots = await getPositionsSlots(pool, positions, publicClient, blockNumber);
+    const slots = await getPositionsSlots(AMM, pool, positions, publicClient, blockNumber);
     await verifySlots(slots);
   });
 });
