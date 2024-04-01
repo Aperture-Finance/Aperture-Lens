@@ -12,7 +12,13 @@ import {
   EphemeralPoolTicks__factory,
 } from "../../typechain";
 import { callEphemeralContract } from "./caller";
-import { AutomatedMarketMakerEnum } from "@aperture_finance/uniswap-v3-automation-sdk";
+import { z } from 'zod';
+
+export const AutomatedMarketMakerEnum = z.enum([
+  'UNISWAP_V3',
+  'PANCAKESWAP_V3',
+]);
+export type AutomatedMarketMakerEnum = z.infer<typeof AutomatedMarketMakerEnum>;
 
 /**
  * Fetches the liquidity within the tick range for the specified pool by deploying an ephemeral contract via `eth_call`.
