@@ -14,12 +14,12 @@ jobs: # each workflow consists of 1+ jobs; by default, all jobs run in parallel
     runs-on: ubuntu-latest # host's operating system
     steps: # each job consists of 1+ steps
       - name: Checkout commit # download the code from triggering commit
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Use Node.js 18.x
-        uses: actions/setup-node@v3
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
           cache: "yarn"
           cache-dependency-path: "yarn.lock"
 
