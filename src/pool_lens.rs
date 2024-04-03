@@ -89,7 +89,7 @@ mod tests {
     async fn test_get_populated_ticks_in_range() -> Result<()> {
         let client = Arc::new(MAINNET.provider());
         let pool = IUniswapV3Pool::new(POOL_ADDRESS.parse::<Address>()?, client.clone());
-        let (_, tick_current, _, _, _, _, _) = pool.slot_0().block(BlockId::from(*BLOCK_NUMBER)).call().await?;
+        let (_, tick_current, _, _, _, _, _) = pool.slot_0().block(*BLOCK_NUMBER).call().await?;
         let ticks = get_populated_ticks_in_range(
             POOL_ADDRESS.parse()?,
             tick_current,
@@ -101,6 +101,7 @@ mod tests {
         assert!(!ticks.is_empty());
         let mut multicall = Multicall::new(client.clone(), None).await?;
         multicall.add_calls(false, ticks.iter().map(|&PopulatedTick { tick, .. }| pool.ticks(tick)));
+        #[allow(clippy::type_complexity)]
         let alt_ticks: Vec<(u128, i128, U256, U256, i64, U256, u32, bool)> = multicall
             .block(match *BLOCK_NUMBER {
                 BlockId::Number(n) => n,
