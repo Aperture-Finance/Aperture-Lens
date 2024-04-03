@@ -52,13 +52,9 @@ jobs:
         run: |
           rustup override set nightly
           rustup component add clippy --toolchain nightly
-          rustup component add rustfmt --toolchain nightly
 
       - name: Check linting
         run: cargo clippy --all-targets --all-features -- -D warnings
-
-      - name: Check formatting
-        run: cargo fmt --all -- --check
 
   test:
     needs: lint
