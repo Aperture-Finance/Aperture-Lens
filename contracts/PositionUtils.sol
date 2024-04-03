@@ -82,6 +82,7 @@ abstract contract PositionUtils is PoolUtils {
     /// @param npm Uniswap v3 Nonfungible Position Manager
     /// @param tokenId The ID of the token that represents the position
     /// @param pos The position pointer to be updated in place
+    /// @return exists Whether the position exists
     function positionInPlace(INPM npm, uint256 tokenId, PositionFull memory pos) internal view returns (bool exists) {
         bytes4 selector = INPM.positions.selector;
         assembly ("memory-safe") {
@@ -96,15 +97,15 @@ abstract contract PositionUtils is PoolUtils {
 
     /// @dev Equivalent to `IUniswapV3Pool.slot0`
     /// @param pool Uniswap v3 pool
-    /// @param s Slot0 pointer to be updated in place
-    function slot0InPlace(V3PoolCallee pool, Slot0 memory s) internal view {
+    /// @param slot0 Slot0 pointer to be updated in place
+    function slot0InPlace(V3PoolCallee pool, Slot0 memory slot0) internal view {
         bytes4 selector = IUniswapV3PoolState.slot0.selector;
         assembly ("memory-safe") {
             // Write the function selector into memory.
             mstore(0, selector)
             // We use 4 because of the length of our calldata.
-            // We copy up to 224 bytes of return data after fmp.
-            if iszero(staticcall(gas(), pool, 0, 4, s, 0xe0)) {
+            // We copy up to 224 bytes of return data at slot0's pointer.
+            if iszero(staticcall(gas(), pool, 0, 4, slot0, 0xe0)) {
                 revert(0, 0)
             }
         }
