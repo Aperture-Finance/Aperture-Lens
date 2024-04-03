@@ -1,6 +1,6 @@
 [package]
 name = "aperture-lens"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["Aperture Finance <engineering@aperture.finance>"]
 description = "Contains ephemeral lens contracts that can be called without deployment and their Rust interfaces."
@@ -12,9 +12,9 @@ include = ["src/**/*.rs"]
 
 [dependencies]
 anyhow = "1"
-ethers = { version = "2", features = ["default"] }
+ethers = "2"
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
 futures = "0.3"
-tokio = { version = "1.35", features = ["full"] }
+tokio = { version = "1.37", features = ["full"] }
