@@ -107,7 +107,7 @@ mod tests {
         }
         get_create2_address_from_hash(
             factory,
-            keccak256(encode(&vec![
+            keccak256(encode(&[
                 Token::Address(token_0),
                 Token::Address(token_1),
                 Token::Uint(U256::from(fee)),
@@ -153,6 +153,7 @@ mod tests {
                 .iter()
                 .map(|PositionState { token_id, .. }| npm.positions(*token_id)),
         );
+        #[allow(clippy::type_complexity)]
         let alt_positions: Vec<(
             u128,
             Address,
