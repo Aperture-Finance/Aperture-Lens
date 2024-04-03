@@ -32,7 +32,6 @@ contract EphemeralPoolTickBitmap is PoolUtils {
         (int16 wordPosLower, int16 wordPosUpper) = getWordPositions(TickMath.MIN_TICK, TickMath.MAX_TICK, tickSpacing);
         uint256 TICKBITMAP_SLOT = getTickBitmapSlot();
         unchecked {
-            // cache the bitmap and calculate the number of populated ticks
             slots = new Slot[](uint16(wordPosUpper - wordPosLower + 1));
             for (int16 wordPos = wordPosLower; wordPos <= wordPosUpper; ++wordPos) {
                 // calculate the storage slot corresponding to the word position

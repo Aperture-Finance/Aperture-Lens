@@ -40,8 +40,8 @@
     "compile": "forge build",
     "test": "forge test",
     "test:hardhat": "hardhat test",
-    "snapshot": "forge snapshot",
-    "snapshot:diff": "forge snapshot --diff",
+    "snapshot": "forge snapshot --isolate",
+    "snapshot:diff": "forge snapshot --diff --isolate",
     "prettier": "prettier -c {contracts,test}/**/*.sol ./**/*.ts",
     "prettier:fix": "prettier -w {contracts,test}/**/*.sol ./**/*.ts",
     "typechain": "hardhat typechain"
