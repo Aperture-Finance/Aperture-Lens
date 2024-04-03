@@ -56,30 +56,6 @@ abstract contract BaseTest is
     uint256 internal token1Unit;
     int24 internal tickSpacing;
 
-    // Configure state variables for each chain before creating a fork
-    function initBeforeFork() internal returns (string memory chainAlias, uint256 blockNumber) {
-        if (chainId == 0) {
-            chainId = vm.envOr("CHAIN_ID", uint256(1));
-        }
-        chainAlias = getChain(chainId).chainAlias;
-        // Configuration for each chain
-        if (chainId == 1) {
-            blockNumber = 17000000;
-            USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-            npm = dex == DEX.PancakeSwapV3
-                ? INPM(0x46A15B0b27311cedF172AB29E4f4766fbE7F4364)
-                : INPM(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
-        } else if (chainId == 56) {
-            blockNumber = 37460000;
-            USDC = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
-            npm = dex == DEX.PancakeSwapV3
-                ? INPM(0x46A15B0b27311cedF172AB29E4f4766fbE7F4364)
-                : INPM(0x7b8A01B39D58278b5DE7e48c8449c9f4F5170613);
-        } else {
-            revert("Unsupported chain");
-        }
-    }
-
     // Configure state variables for each chain after creating a fork
     function initAfterFork() internal {
         factory = npm.factory();
@@ -92,8 +68,26 @@ abstract contract BaseTest is
     }
 
     function setUp() public virtual {
-        (string memory chainAlias, uint256 blockNumber) = initBeforeFork();
-        vm.createSelectFork(chainAlias, blockNumber);
+        if (chainId == 0) {
+            chainId = vm.envOr("CHAIN_ID", uint256(1));
+        }
+        string memory chainAlias = getChain(chainId).chainAlias;
+        // Configuration for each chain
+        if (chainId == 1) {
+            vm.createSelectFork(chainAlias, 17000000);
+            USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+            npm = dex == DEX.PancakeSwapV3
+                ? INPM(0x46A15B0b27311cedF172AB29E4f4766fbE7F4364)
+                : INPM(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
+        } else if (chainId == 56) {
+            vm.createSelectFork(chainAlias);
+            USDC = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
+            npm = dex == DEX.PancakeSwapV3
+                ? INPM(0x46A15B0b27311cedF172AB29E4f4766fbE7F4364)
+                : INPM(0x7b8A01B39D58278b5DE7e48c8449c9f4F5170613);
+        } else {
+            revert("Unsupported chain");
+        }
         initAfterFork();
         vm.label(WETH, "WETH");
         vm.label(USDC, "USDC");

@@ -88,7 +88,7 @@ contract PositionLensTest is BaseTest {
         assertEq(collect1, amount1);
     }
 
-    function verifyPosition(PositionState memory pos) internal {
+    function verifyPosition(PositionState memory pos) internal view {
         {
             assertEq(pos.owner, npm.ownerOf(pos.tokenId), "owner");
             (, , address token0, , uint24 fee, int24 tickLower, , uint128 liquidity, , , , ) = npm.positions(
