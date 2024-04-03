@@ -7,7 +7,7 @@ import "contracts/EphemeralGetPopulatedTicksInRange.sol";
 import "./Base.t.sol";
 
 contract TickLensTest is BaseTest, PoolUtils {
-    function verifyTicks(PopulatedTick[] memory populatedTicks) internal {
+    function verifyTicks(PopulatedTick[] memory populatedTicks) internal view {
         for (uint256 i; i < populatedTicks.length; ++i) {
             PopulatedTick memory populatedTick = populatedTicks[i];
             (
