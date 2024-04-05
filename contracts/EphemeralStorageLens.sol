@@ -15,12 +15,12 @@ contract EphemeralStorageLens {
             let calldataptr := slots.offset
             // prettier-ignore
             for { } 1 { } {
-                if eq(memptr, end) {
-                    break
-                }
                 mstore(memptr, sload(calldataload(calldataptr)))
                 memptr := add(memptr, 0x20)
                 calldataptr := add(calldataptr, 0x20)
+                if eq(memptr, end) {
+                    break
+                }
             }
             return(0, end)
         }
