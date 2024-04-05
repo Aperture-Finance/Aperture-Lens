@@ -18,9 +18,7 @@ contract EphemeralStorageLens {
                 mstore(memptr, sload(calldataload(calldataptr)))
                 memptr := add(memptr, 0x20)
                 calldataptr := add(calldataptr, 0x20)
-                if eq(memptr, end) {
-                    break
-                }
+                if iszero(lt(memptr, end)) { break }
             }
             return(0, end)
         }

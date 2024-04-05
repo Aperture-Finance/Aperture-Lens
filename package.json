@@ -42,8 +42,8 @@
     "test:hardhat": "hardhat test",
     "snapshot": "forge snapshot --isolate",
     "snapshot:diff": "forge snapshot --diff --isolate",
-    "prettier": "prettier -c {contracts,test}/**/*.sol ./**/*.ts",
-    "prettier:fix": "prettier -w {contracts,test}/**/*.sol ./**/*.ts",
+    "prettier": "prettier -c contracts/{*,**/*}.sol test/**/*.sol ./**/*.ts",
+    "prettier:fix": "prettier -w contracts/{*,**/*}.sol test/**/*.sol ./**/*.ts",
     "typechain": "hardhat typechain"
   },
   "dependencies": {
