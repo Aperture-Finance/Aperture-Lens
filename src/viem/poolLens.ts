@@ -17,6 +17,7 @@ import { z } from 'zod';
 export const AutomatedMarketMakerEnum = z.enum([
   'UNISWAP_V3',
   'PANCAKESWAP_V3',
+  'SLIPSTREAM',
 ]);
 export type AutomatedMarketMakerEnum = z.infer<typeof AutomatedMarketMakerEnum>;
 
