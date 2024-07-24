@@ -12,12 +12,9 @@ import {
   EphemeralPoolTicks__factory,
 } from "../../typechain";
 import { callEphemeralContract } from "./caller";
-import { z } from 'zod';
+import { z } from "zod";
 
-export const AutomatedMarketMakerEnum = z.enum([
-  'UNISWAP_V3',
-  'PANCAKESWAP_V3',
-]);
+export const AutomatedMarketMakerEnum = z.enum(["UNISWAP_V3", "PANCAKESWAP_V3", "SlipStream"]);
 export type AutomatedMarketMakerEnum = z.infer<typeof AutomatedMarketMakerEnum>;
 
 /**
