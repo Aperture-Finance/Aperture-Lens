@@ -1,6 +1,6 @@
 {
   "name": "aperture-lens",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Contains ephemeral lens contracts that can be called without deployment and their interfaces in various Web3 libraries.",
   "author": "Aperture Finance <engineering@aperture.finance>",
   "license": "Apache-2.0",
