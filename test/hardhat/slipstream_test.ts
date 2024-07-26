@@ -1,7 +1,6 @@
 import { TickMath } from "@uniswap/v3-sdk";
 import { expect } from "chai";
-import { ContractFunctionReturnType, createPublicClient, getContract, http, toHex } from "viem";
-import { bsc } from "viem/chains";
+import { Address, ContractFunctionReturnType, createPublicClient, getContract, http, toHex } from "viem";
 import {
   AutomatedMarketMakerEnum,
   getAllPositionsByOwner,
@@ -17,47 +16,50 @@ import {
 import {
   EphemeralGetPositions__factory,
   EphemeralPoolSlots__factory,
-  IPCSV3NonfungiblePositionManager__factory,
-  IPancakeV3Pool__factory,
+  ISlipStreamCLFactory__factory,
+  ISlipStreamNonfungiblePositionManager__factory,
 } from "../../typechain";
-import { computePoolAddress } from "@pancakeswap/v3-sdk";
-import { Token } from "@pancakeswap/sdk";
+import { base } from "viem/chains";
+import 'dotenv/config';
+import SlipStreamPoolAbi from './SlipStreamPool_abi.json';
 
-const AMM = AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3;
-const PCSV3_NPM = "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364";
-const PCSV3_POOL_DEPLOYER = "0x41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c9";
-const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
-const WBNB_ADDRESS = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
+const AMM = AutomatedMarketMakerEnum.enum.SLIPSTREAM;
+const SLIPSTREAM_NPM = "0x827922686190790b37229fd06084350E74485b72";
+const SLIPSTREAM_FACTORY = "0x5e7BB104d84c7CB9B682AaC2F3d509f5F406809A";
+const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 
-describe("Pool lens test with PCSV3 on BSC", () => {
+describe("Pool lens test with SlipStream on Base", () => {
   const publicClient = createPublicClient({
-    chain: bsc,
-    transport: http(`https://bsc-rpc.publicnode.com`),
+    chain: base,
+    transport: http(`${process.env.BASE_RPC_URL}`),
     batch: {
       multicall: true,
     },
   });
-  var blockNumber: bigint;
-  const pool = computePoolAddress({
-    deployerAddress: PCSV3_POOL_DEPLOYER,
-    tokenA: new Token(bsc.id, USDT_ADDRESS, 6, "USDT"),
-    tokenB: new Token(bsc.id, WBNB_ADDRESS, 18, "WBNB"),
-    fee: 500,
-  });
-  const poolContract = getContract({
-    address: pool,
-    abi: IPancakeV3Pool__factory.abi,
+  const factoryContract = getContract({
+    address: SLIPSTREAM_FACTORY,
+    abi: ISlipStreamCLFactory__factory.abi,
     client: publicClient,
   });
   const npm = getContract({
-    address: PCSV3_NPM,
-    abi: IPCSV3NonfungiblePositionManager__factory.abi,
+    address: SLIPSTREAM_NPM,
+    abi: ISlipStreamNonfungiblePositionManager__factory.abi,
     client: publicClient,
   });
+  let blockNumber: bigint;
+  let pool: Address;
+  let poolContract;
 
   before(async () => {
     blockNumber = (await publicClient.getBlockNumber()) - 64n;
-    console.log(`Running PCSV3 tests on the BNB chain at block number ${blockNumber}...`);
+    console.log(`Running SlipStream tests on Base mainnet at block number ${blockNumber}...`);
+    pool = await factoryContract.read.getPool([WETH_ADDRESS, USDC_ADDRESS, /*tickSpacing=*/100], { blockNumber });
+    poolContract = getContract({
+      abi: SlipStreamPoolAbi,
+      client: publicClient,
+      address: pool,
+    });
   });
 
   it("Test extsload", async () => {
@@ -90,19 +92,13 @@ describe("Pool lens test with PCSV3 on BSC", () => {
   it("Test getting position details", async () => {
     const {
       tokenId,
-      position: { token0, token1, feeOrTickSpacing: fee },
+      position: { token0, token1, feeOrTickSpacing: tickSpacing },
       slot0: { sqrtPriceX96, tick },
-    } = await getPositionDetails(AMM, PCSV3_NPM, 4n, publicClient, blockNumber);
-    expect(tokenId).to.be.eq(4n);
-    const poolAddress = computePoolAddress({
-      deployerAddress: PCSV3_POOL_DEPLOYER,
-      tokenA: new Token(bsc.id, token0, 0, "NOT_USED"),
-      tokenB: new Token(bsc.id, token1, 0, "NOT_USED"),
-      fee,
-    });
+    } = await getPositionDetails(AMM, SLIPSTREAM_NPM, 43484n, publicClient, blockNumber);
+    expect(tokenId).to.be.eq(43484n);
     const [_sqrtPriceX96, _tick] = await getContract({
-      address: poolAddress,
-      abi: IPancakeV3Pool__factory.abi,
+      address: await factoryContract.read.getPool([token0, token1, tickSpacing], { blockNumber }),
+      abi: SlipStreamPoolAbi,
       client: publicClient,
     }).read.slot0({ blockNumber });
     expect(sqrtPriceX96).to.be.eq(_sqrtPriceX96);
@@ -111,17 +107,17 @@ describe("Pool lens test with PCSV3 on BSC", () => {
 
   async function verifyPositionDetails(posArr: ContractFunctionReturnType<typeof EphemeralGetPositions__factory.abi>) {
     await Promise.all(
-      posArr.map(async ({ tokenId, position, poolFee }) => {
-        const [, , token0, token1, fee, tickLower, tickUpper, liquidity] = await npm.read.positions([tokenId], {
+      posArr.map(async ({ tokenId, position, poolTickSpacing }) => {
+        const [, , token0, token1, tickSpacing, tickLower, tickUpper, liquidity] = await npm.read.positions([tokenId], {
           blockNumber,
         });
         expect(position.token0).to.be.eq(token0);
         expect(position.token1).to.be.eq(token1);
-        expect(position.feeOrTickSpacing).to.be.eq(fee);
+        expect(position.feeOrTickSpacing).to.be.eq(tickSpacing);
         expect(position.tickLower).to.be.eq(tickLower);
         expect(position.tickUpper).to.be.eq(tickUpper);
         expect(position.liquidity).to.be.eq(liquidity);
-        expect(poolFee).to.be.eq(fee);
+        expect(poolTickSpacing).to.be.eq(tickSpacing);
       }),
     );
   }
@@ -129,7 +125,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
   it("Test getting position array", async () => {
     const posArr = await getPositions(
       AMM,
-      PCSV3_NPM,
+      SLIPSTREAM_NPM,
       Array.from({ length: 100 }, (_, i) => BigInt(i + 1)),
       publicClient,
       blockNumber,
@@ -141,7 +137,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
     const totalSupply = await npm.read.totalSupply({ blockNumber });
     const tokenId = await npm.read.tokenByIndex([totalSupply - 1n], { blockNumber });
     const owner = await npm.read.ownerOf([tokenId], { blockNumber });
-    const posArr = await getAllPositionsByOwner(AMM, PCSV3_NPM, owner, publicClient, blockNumber);
+    const posArr = await getAllPositionsByOwner(AMM, SLIPSTREAM_NPM, owner, publicClient, blockNumber);
     await verifyPositionDetails(posArr);
   });
 
@@ -175,7 +171,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
     const logs = await poolContract.getEvents.Mint(
       {},
       {
-        fromBlock: blockNumber - 10000n,
+        fromBlock: blockNumber - 1000n,
         toBlock: blockNumber,
       },
     );

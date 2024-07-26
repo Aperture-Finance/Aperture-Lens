@@ -8,7 +8,6 @@ on:
 
 env:
   FOUNDRY_PROFILE: ci
-  MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
   BNB_RPC_URL: ${{ secrets.BNB_RPC_URL }}
 
 jobs:
@@ -42,16 +41,7 @@ jobs:
           forge build
         id: build
 
-      - name: Run Forge tests on Ethereum mainnet
+      - name: Run Forge tests on Base
         run: |
           forge test -vvv
-        env:
-          CHAIN_ID: 1
-        id: testMainnet
-
-      - name: Run Forge tests on BNB mainnet
-        run: |
-          forge test -vvv
-        env:
-          CHAIN_ID: 56
-        id: testBNB
+        id: testBase

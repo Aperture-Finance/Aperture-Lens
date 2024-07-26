@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {NPMCaller} from "@aperture_finance/uni-v3-lib/src/NPMCaller.sol";
 import "./PositionUtils.sol";
 
 /// @notice A lens for Uniswap v3 that peeks into the current state of positions and pool info without deployment
@@ -8,8 +9,8 @@ import "./PositionUtils.sol";
 /// @dev The return data can be accessed externally by `eth_call` without a `to` address or internally by catching the
 /// revert data, and decoded by `abi.decode(data, (PositionState[]))`
 contract EphemeralGetPositions is PositionUtils {
-    constructor(INPM npm, uint256[] memory tokenIds) payable {
-        PositionState[] memory positions = getPositions(npm, tokenIds);
+    constructor(DEX dex, address npm, uint256[] memory tokenIds) payable {
+        PositionState[] memory positions = getPositions(dex, npm, tokenIds);
         bytes memory returnData = abi.encode(positions);
         assembly ("memory-safe") {
             revert(add(returnData, 0x20), mload(returnData))
@@ -17,10 +18,12 @@ contract EphemeralGetPositions is PositionUtils {
     }
 
     /// @dev Public function to expose the abi for easier decoding using TypeChain
+    /// @param dex DEX
     /// @param npm Nonfungible position manager
     /// @param tokenIds Token IDs of the positions
     function getPositions(
-        INPM npm,
+        DEX dex,
+        address npm,
         uint256[] memory tokenIds
     ) public payable returns (PositionState[] memory positions) {
         unchecked {
@@ -32,8 +35,8 @@ contract EphemeralGetPositions is PositionUtils {
                 PositionState memory state = positions[i];
                 if (positionInPlace(npm, tokenId, state.position)) {
                     ++i;
-                    state.owner = NPMCaller.ownerOf(npm, tokenId);
-                    peek(npm, tokenId, state);
+                    state.owner = NPMCaller.ownerOf(INPM(npm), tokenId);
+                    peek(dex, npm, tokenId, state);
                 }
             }
             assembly ("memory-safe") {

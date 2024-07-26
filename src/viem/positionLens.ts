@@ -5,6 +5,20 @@ import {
   EphemeralGetPosition__factory,
   EphemeralGetPositions__factory,
 } from "../../typechain";
+import { AutomatedMarketMakerEnum } from "./poolLens";
+
+function ammToSolidityDexEnum(amm: AutomatedMarketMakerEnum): number {
+  if (amm === AutomatedMarketMakerEnum.enum.UNISWAP_V3) {
+    return 0;
+  }
+  if (amm === AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3) {
+    return 1;
+  }
+  if (amm === AutomatedMarketMakerEnum.enum.SLIPSTREAM) {
+    return 2;
+  }
+  throw new Error(`Unexpected AMM: ${amm}`);
+}
 
 /**
  * Get the position details in a single call by deploying an ephemeral contract via `eth_call`
@@ -15,6 +29,7 @@ import {
  * @returns The position details.
  */
 export async function getPositionDetails(
+  amm: AutomatedMarketMakerEnum,
   npm: Address,
   positionId: bigint,
   publicClient: PublicClient,
@@ -24,7 +39,7 @@ export async function getPositionDetails(
     {
       abi: EphemeralGetPosition__factory.abi,
       bytecode: EphemeralGetPosition__factory.bytecode,
-      args: [npm, positionId],
+      args: [ammToSolidityDexEnum(amm), npm, positionId],
     },
     publicClient,
     blockNumber,
@@ -40,6 +55,7 @@ export async function getPositionDetails(
  * @returns The position details for all positions.
  */
 export async function getPositions(
+  amm: AutomatedMarketMakerEnum,
   npm: Address,
   positionIds: bigint[],
   publicClient: PublicClient,
@@ -49,7 +65,7 @@ export async function getPositions(
     {
       abi: EphemeralGetPositions__factory.abi,
       bytecode: EphemeralGetPositions__factory.bytecode,
-      args: [npm, positionIds],
+      args: [ammToSolidityDexEnum(amm), npm, positionIds],
     },
     publicClient,
     blockNumber,
@@ -67,6 +83,7 @@ export async function getPositions(
  * @returns The position details for all positions of the specified owner.
  */
 export async function getAllPositionsByOwner(
+  amm: AutomatedMarketMakerEnum,
   npm: Address,
   owner: Address,
   publicClient: PublicClient,
@@ -76,7 +93,7 @@ export async function getAllPositionsByOwner(
     {
       abi: EphemeralAllPositionsByOwner__factory.abi,
       bytecode: EphemeralAllPositionsByOwner__factory.bytecode,
-      args: [npm, owner],
+      args: [ammToSolidityDexEnum(amm), npm, owner],
     },
     publicClient,
     blockNumber,

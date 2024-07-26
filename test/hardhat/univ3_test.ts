@@ -16,7 +16,7 @@ import {
 import {
   EphemeralGetPositions__factory,
   EphemeralPoolSlots__factory,
-  INonfungiblePositionManager__factory,
+  IUniswapV3NonfungiblePositionManager__factory,
   IUniswapV3Pool__factory,
 } from "../../typechain";
 import { mainnet } from "viem/chains";
@@ -50,7 +50,7 @@ describe("Pool lens test with UniV3 on mainnet", () => {
   });
   const npm = getContract({
     address: UNIV3_NPM,
-    abi: INonfungiblePositionManager__factory.abi,
+    abi: IUniswapV3NonfungiblePositionManager__factory.abi,
     client: publicClient,
   });
 
@@ -89,9 +89,9 @@ describe("Pool lens test with UniV3 on mainnet", () => {
   it("Test getting position details", async () => {
     const {
       tokenId,
-      position: { token0, token1, fee },
+      position: { token0, token1, feeOrTickSpacing: fee },
       slot0: { sqrtPriceX96, tick },
-    } = await getPositionDetails(UNIV3_NPM, 4n, publicClient, blockNumber);
+    } = await getPositionDetails(AMM, UNIV3_NPM, 4n, publicClient, blockNumber);
     expect(tokenId).to.be.eq(4n);
     const [_sqrtPriceX96, _tick] = await getContract({
       address: computePoolAddress({
@@ -109,22 +109,24 @@ describe("Pool lens test with UniV3 on mainnet", () => {
 
   async function verifyPositionDetails(posArr: ContractFunctionReturnType<typeof EphemeralGetPositions__factory.abi>) {
     await Promise.all(
-      posArr.map(async ({ tokenId, position }) => {
+      posArr.map(async ({ tokenId, position, poolFee }) => {
         const [, , token0, token1, fee, tickLower, tickUpper, liquidity] = await npm.read.positions([tokenId], {
           blockNumber,
         });
         expect(position.token0).to.be.eq(token0);
         expect(position.token1).to.be.eq(token1);
-        expect(position.fee).to.be.eq(fee);
+        expect(position.feeOrTickSpacing).to.be.eq(fee);
         expect(position.tickLower).to.be.eq(tickLower);
         expect(position.tickUpper).to.be.eq(tickUpper);
         expect(position.liquidity).to.be.eq(liquidity);
+        expect(poolFee).to.be.eq(fee);
       }),
     );
   }
 
   it("Test getting position array", async () => {
     const posArr = await getPositions(
+      AMM,
       UNIV3_NPM,
       Array.from({ length: 100 }, (_, i) => BigInt(i + 1)),
       publicClient,
@@ -137,7 +139,7 @@ describe("Pool lens test with UniV3 on mainnet", () => {
     const totalSupply = await npm.read.totalSupply({ blockNumber });
     const tokenId = await npm.read.tokenByIndex([totalSupply - 1n], { blockNumber });
     const owner = await npm.read.ownerOf([tokenId], { blockNumber });
-    const posArr = await getAllPositionsByOwner(UNIV3_NPM, owner, publicClient, blockNumber);
+    const posArr = await getAllPositionsByOwner(AMM, UNIV3_NPM, owner, publicClient, blockNumber);
     await verifyPositionDetails(posArr);
   });
 
