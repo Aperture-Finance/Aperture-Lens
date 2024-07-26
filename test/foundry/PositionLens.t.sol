@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IPCSV3NonfungiblePositionManager} from "@aperture_finance/uni-v3-lib/src/interfaces/INonfungiblePositionManager.sol";
+import {IPCSV3NonfungiblePositionManager} from "@aperture_finance/uni-v3-lib/src/interfaces/IPCSV3NonfungiblePositionManager.sol";
 import {PoolAddress} from "@aperture_finance/uni-v3-lib/src/PoolAddress.sol";
 import {PoolAddressPancakeSwapV3} from "@aperture_finance/uni-v3-lib/src/PoolAddressPancakeSwapV3.sol";
 import {IPancakeV3Pool} from "@pancakeswap/v3-core/contracts/interfaces/IPancakeV3Pool.sol";
@@ -19,7 +19,7 @@ contract PositionLensTest is BaseTest {
 
     function setUp() public virtual override {
         super.setUp();
-        lastTokenId = npm.totalSupply();
+        lastTokenId = INPM(npm).totalSupply();
         positionLens = new PositionLens();
         int24 tick = currentTick();
         _tickLower = tick - tickSpacing;
@@ -35,8 +35,8 @@ contract PositionLensTest is BaseTest {
     function generateFees() internal {
         uint160 initialPrice = sqrtPriceX96();
         uint256 amountIn = 1000 * token0Unit;
-        deal(token0, address(this), 2 * amountIn);
-        deal(token1, address(this), 1000 * token1Unit);
+        deal(token0, address(this), 100000 * amountIn);
+        deal(token1, address(this), 100000 * token1Unit);
         for (uint256 i; i < 10; ++i) {
             swapBackAndForth(amountIn, true, initialPrice);
         }
@@ -90,12 +90,13 @@ contract PositionLensTest is BaseTest {
 
     function verifyPosition(PositionState memory pos) internal view {
         {
-            assertEq(pos.owner, npm.ownerOf(pos.tokenId), "owner");
-            (, , address token0, , uint24 fee, int24 tickLower, , uint128 liquidity, , , , ) = npm.positions(
+            assertEq(pos.owner, INPM(npm).ownerOf(pos.tokenId), "owner");
+            (, , address token0, , uint24 fee, int24 tickLower, , uint128 liquidity, , , , ) = IUniV3NPM(npm).positions(
                 pos.tokenId
             );
             assertEq(token0, pos.position.token0, "token0");
-            assertEq(fee, pos.position.fee, "fee");
+            assertEq(fee, pos.position.feeOrTickSpacing, "fee");
+            assertEq(fee, pos.poolFee, "poolFee");
             assertEq(tickLower, pos.position.tickLower, "tickLower");
             assertEq(liquidity, pos.position.liquidity, "liquidity");
         }
@@ -103,7 +104,7 @@ contract PositionLensTest is BaseTest {
             address pool = IUniswapV3Factory(factory).getPool(
                 pos.position.token0,
                 pos.position.token1,
-                pos.position.fee
+                pos.poolFee
             );
             (
                 uint160 sqrtPriceX96,
@@ -131,7 +132,7 @@ contract PositionLensTest is BaseTest {
     /// forge-config: ci.fuzz.runs = 16
     function testFuzz_GetPosition(uint256 tokenId) public virtual {
         tokenId = bound(tokenId, 1, 200);
-        try new EphemeralGetPosition(npm, tokenId) {} catch (bytes memory returnData) {
+        try new EphemeralGetPosition(dex, npm, tokenId) {} catch (bytes memory returnData) {
             PositionState memory pos = abi.decode(returnData, (PositionState));
             verifyPosition(pos);
         }
@@ -143,7 +144,7 @@ contract PositionLensTest is BaseTest {
         for (uint256 i; i < 10; ++i) {
             tokenIds[i] = startTokenId + i;
         }
-        try new EphemeralGetPositions(npm, tokenIds) {} catch (bytes memory returnData) {
+        try new EphemeralGetPositions(dex, npm, tokenIds) {} catch (bytes memory returnData) {
             PositionState[] memory positions = abi.decode(returnData, (PositionState[]));
             uint256 length = positions.length;
             console2.log("length", length);
@@ -154,8 +155,8 @@ contract PositionLensTest is BaseTest {
     }
 
     function test_AllPositions() public {
-        address owner = npm.ownerOf(lastTokenId);
-        try new EphemeralAllPositionsByOwner(npm, owner) {} catch (bytes memory returnData) {
+        address owner = INPM(npm).ownerOf(lastTokenId);
+        try new EphemeralAllPositionsByOwner(dex, npm, owner) {} catch (bytes memory returnData) {
             PositionState[] memory positions = abi.decode(returnData, (PositionState[]));
             uint256 length = positions.length;
             console2.log("balance", length);

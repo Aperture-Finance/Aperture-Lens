@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import {INonfungiblePositionManager as INPM} from "@aperture_finance/uni-v3-lib/src/interfaces/INonfungiblePositionManager.sol";
+import "contracts/PositionUtils.sol";
 import "@aperture_finance/uni-v3-lib/src/LiquidityAmounts.sol";
 import "@aperture_finance/uni-v3-lib/src/PoolCaller.sol";
 import "@aperture_finance/uni-v3-lib/src/TernaryLib.sol";
@@ -16,11 +16,6 @@ import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3MintCallback.so
 import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 import "forge-std/Test.sol";
 import "solady/src/utils/SafeTransferLib.sol";
-
-enum DEX {
-    UniswapV3,
-    PancakeSwapV3
-}
 
 abstract contract BaseTest is
     Test,
@@ -39,13 +34,10 @@ abstract contract BaseTest is
     uint160 internal constant MAX_SQRT_RATIO_MINUS_ONE = 1461446703485210103287273052203988822378723970342 - 1;
 
     DEX internal dex;
+    address internal npm;
 
-    // Uniswap v3 position manager
-    INPM internal npm;
-
-    uint256 internal chainId;
     address internal WETH;
-    address internal USDC;
+    address internal constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address internal token0;
     address internal token1;
     uint24 internal constant fee = 500;
@@ -58,8 +50,8 @@ abstract contract BaseTest is
 
     // Configure state variables for each chain after creating a fork
     function initAfterFork() internal {
-        factory = npm.factory();
-        WETH = npm.WETH9();
+        factory = INPM(npm).factory();
+        WETH = INPM(npm).WETH9();
         (token0, token1) = (WETH < USDC).switchIf(USDC, WETH);
         pool = IUniswapV3Factory(factory).getPool(token0, token1, fee);
         tickSpacing = V3PoolCallee.wrap(pool).tickSpacing();
@@ -68,31 +60,19 @@ abstract contract BaseTest is
     }
 
     function setUp() public virtual {
-        if (chainId == 0) {
-            chainId = vm.envOr("CHAIN_ID", uint256(1));
-        }
-        string memory chainAlias = getChain(chainId).chainAlias;
-        // Configuration for each chain
-        if (chainId == 1) {
-            vm.createSelectFork(chainAlias, 17000000);
-            USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-            npm = dex == DEX.PancakeSwapV3
-                ? INPM(0x46A15B0b27311cedF172AB29E4f4766fbE7F4364)
-                : INPM(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
-        } else if (chainId == 56) {
-            vm.createSelectFork(chainAlias);
-            USDC = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
-            npm = dex == DEX.PancakeSwapV3
-                ? INPM(0x46A15B0b27311cedF172AB29E4f4766fbE7F4364)
-                : INPM(0x7b8A01B39D58278b5DE7e48c8449c9f4F5170613);
+        vm.createSelectFork("base", 17577000);
+        if (dex == DEX.UniswapV3) {
+            npm = 0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1;
+        } else if (dex == DEX.PancakeSwapV3) {
+            npm = 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364;
         } else {
-            revert("Unsupported chain");
+            npm = 0x827922686190790b37229fd06084350E74485b72;
         }
         initAfterFork();
         vm.label(WETH, "WETH");
         vm.label(USDC, "USDC");
         vm.label(address(npm), "NPM");
-        vm.label(pool, "UniswapV3Pool");
+        vm.label(pool, "Pool");
         vm.label(address(this), "Test");
     }
 

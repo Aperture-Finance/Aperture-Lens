@@ -51,8 +51,8 @@ contract PoolLensTest is BaseTest, PoolUtils {
         (tickLower, tickUpper) = prepTicks(tickLower, tickUpper);
         uint256 amount0Desired = token0Unit;
         uint256 amount1Desired = token1Unit;
-        deal(token0, address(this), type(uint256).max);
-        deal(token1, address(this), type(uint256).max);
+        deal(token0, address(this), type(uint128).max);
+        deal(token1, address(this), type(uint128).max);
         PositionKey[] memory keys = new PositionKey[](3);
         for (uint256 i; i < 3; ++i) {
             mint(address(this), amount0Desired, amount1Desired, tickLower, tickUpper);
@@ -118,8 +118,8 @@ contract PCSV3PoolLensTest is BaseTest, PoolUtils {
         (tickLower, tickUpper) = prepTicks(tickLower, tickUpper);
         uint256 amount0Desired = token0Unit;
         uint256 amount1Desired = token1Unit;
-        deal(token0, address(this), type(uint256).max);
-        deal(token1, address(this), type(uint256).max);
+        deal(token0, address(this), type(uint128).max);
+        deal(token1, address(this), type(uint128).max);
         PositionKey[] memory keys = new PositionKey[](3);
         for (uint256 i; i < 3; ++i) {
             mint(address(this), amount0Desired, amount1Desired, tickLower, tickUpper);

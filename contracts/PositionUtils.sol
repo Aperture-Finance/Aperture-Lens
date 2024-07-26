@@ -1,14 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {INonfungiblePositionManager as INPM, IPCSV3NonfungiblePositionManager as IPCSV3NPM} from "@aperture_finance/uni-v3-lib/src/interfaces/INonfungiblePositionManager.sol";
-import {NPMCaller, PositionFull} from "@aperture_finance/uni-v3-lib/src/NPMCaller.sol";
+import {ICommonNonfungiblePositionManager as INPM, IUniswapV3NonfungiblePositionManager as IUniV3NPM} from "@aperture_finance/uni-v3-lib/src/interfaces/IUniswapV3NonfungiblePositionManager.sol";
+import {IPCSV3NonfungiblePositionManager as IPCSV3NPM} from "@aperture_finance/uni-v3-lib/src/interfaces/IPCSV3NonfungiblePositionManager.sol";
+import {ISlipStreamNonfungiblePositionManager as ISlipStreamNPM} from "@aperture_finance/uni-v3-lib/src/interfaces/ISlipStreamNonfungiblePositionManager.sol";
 import {PoolAddress} from "@aperture_finance/uni-v3-lib/src/PoolAddress.sol";
 import {PoolAddressPancakeSwapV3} from "@aperture_finance/uni-v3-lib/src/PoolAddressPancakeSwapV3.sol";
 import {IUniswapV3PoolState, V3PoolCallee} from "@aperture_finance/uni-v3-lib/src/PoolCaller.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+import {IPancakeV3Factory} from "@pancakeswap/v3-core/contracts/interfaces/IPancakeV3Factory.sol";
 import {ERC20Callee} from "./libraries/ERC20Caller.sol";
 import {PoolUtils} from "./PoolUtils.sol";
+
+enum DEX {
+    UniswapV3,
+    PancakeSwapV3,
+    SlipStream
+}
 
 struct Slot0 {
     uint160 sqrtPriceX96;
@@ -16,13 +24,35 @@ struct Slot0 {
     uint16 observationIndex;
     uint16 observationCardinality;
     uint16 observationCardinalityNext;
-    // `feeProtocol` is of type uint8 in Uniswap V3, and uint32 in PancakeSwap V3.
-    // We use uint32 here as this can hold both uint8 and uint32.
+    // `feeProtocol` is of type uint8 in Uniswap V3, and uint32 in PancakeSwap V3. We use uint32 here as this can hold both uint8 and uint32.
+    // `feeProtocol` doesn't exist on SlipStream so this is manually set to 0.
     uint32 feeProtocol;
+    // This should always be true because it is only temporarily set to false as re-entrancy guard during a transaction.
     bool unlocked;
 }
 
-// The length of the struct is 25 words.
+struct PositionFull {
+    // the nonce for permits
+    uint96 nonce;
+    // the address that is approved for spending this token
+    address operator;
+    address token0;
+    address token1;
+    // The pool's fee or tickSpacing. This depends on the DEX's NPM.positions() implementation. This is `fee` for Uniswap V3 and PancakeSwap V3, and `tickSpacing` for SlipStream.
+    uint24 feeOrTickSpacing;
+    // the tick range of the position
+    int24 tickLower;
+    int24 tickUpper;
+    // the liquidity of the position
+    uint128 liquidity;
+    // the fee growth of the aggregate position as of the last action on the individual position
+    uint256 feeGrowthInside0LastX128;
+    uint256 feeGrowthInside1LastX128;
+    // how many uncollected tokens are owed to the position, as of the last computation
+    uint128 tokensOwed0;
+    uint128 tokensOwed1;
+}
+
 struct PositionState {
     // token ID of the position
     uint256 tokenId;
@@ -30,6 +60,12 @@ struct PositionState {
     address owner;
     // nonfungible position manager's position struct with real-time tokensOwed
     PositionFull position;
+    // The pool address.
+    address pool;
+    // The pool's fee in hundredths of a bip, i.e. 1e-6
+    uint24 poolFee;
+    // The pool's tick spacing.
+    int24 poolTickSpacing;
     // pool's slot0 struct
     Slot0 slot0;
     // pool's active liquidity
@@ -40,21 +76,56 @@ struct PositionState {
     uint8 decimals1;
 }
 
+// Partial interface for the SlipStream factory. SlipStream factory is named "CLFactory" and "CL" presumably stands for concentrated liquidity.
+// https://github.com/velodrome-finance/slipstream/blob/main/contracts/core/interfaces/ICLFactory.sol
+interface ISlipStreamCLFactory {
+    /// @notice Returns the pool address for a given pair of tokens and a tick spacing, or address 0 if it does not exist
+    /// @dev tokenA and tokenB may be passed in either token0/token1 or token1/token0 order
+    /// @param tokenA The contract address of either token0 or token1
+    /// @param tokenB The contract address of the other token
+    /// @param tickSpacing The tick spacing of the pool
+    /// @return pool The pool address
+    function getPool(address tokenA, address tokenB, int24 tickSpacing) external view returns (address pool);
+}
+
 /// @title Position utility contract
 /// @author Aperture Finance
 /// @notice Base contract for Uniswap v3 that peeks into the current state of position and pool info
 abstract contract PositionUtils is PoolUtils {
     /// @dev Peek a position and calculate the fee growth inside the position
     /// state.position must be populated before calling this function
+    /// @param dex DEX type
     /// @param npm Nonfungible position manager
     /// @param tokenId Token ID of the position
     /// @param state Position state pointer to be updated in place
-    function peek(INPM npm, uint256 tokenId, PositionState memory state) internal view {
+    function peek(DEX dex, address npm, uint256 tokenId, PositionState memory state) internal view {
         state.tokenId = tokenId;
         PositionFull memory position = state.position;
-        V3PoolCallee pool = V3PoolCallee.wrap(
-            IUniswapV3Factory(NPMCaller.factory(npm)).getPool(position.token0, position.token1, position.fee)
-        );
+        if (dex == DEX.UniswapV3) {
+            state.poolFee = position.feeOrTickSpacing;
+            state.pool = IUniswapV3Factory(IUniV3NPM(npm).factory()).getPool(
+                position.token0,
+                position.token1,
+                state.poolFee
+            );
+        } else if (dex == DEX.PancakeSwapV3) {
+            state.poolFee = position.feeOrTickSpacing;
+            state.pool = IPancakeV3Factory(IUniV3NPM(npm).factory()).getPool(
+                position.token0,
+                position.token1,
+                state.poolFee
+            );
+        } else if (dex == DEX.SlipStream) {
+            state.poolTickSpacing = int24(position.feeOrTickSpacing);
+            state.pool = ISlipStreamCLFactory(ISlipStreamNPM(npm).factory()).getPool(
+                position.token0,
+                position.token1,
+                state.poolTickSpacing
+            );
+        }
+        V3PoolCallee pool = V3PoolCallee.wrap(state.pool);
+        state.poolFee = pool.fee();
+        state.poolTickSpacing = pool.tickSpacing();
         state.activeLiquidity = pool.liquidity();
         slot0InPlace(pool, state.slot0);
         if (position.liquidity != 0) {
@@ -83,8 +154,8 @@ abstract contract PositionUtils is PoolUtils {
     /// @param tokenId The ID of the token that represents the position
     /// @param pos The position pointer to be updated in place
     /// @return exists Whether the position exists
-    function positionInPlace(INPM npm, uint256 tokenId, PositionFull memory pos) internal view returns (bool exists) {
-        bytes4 selector = INPM.positions.selector;
+    function positionInPlace(address npm, uint256 tokenId, PositionFull memory pos) internal view returns (bool exists) {
+        bytes4 selector = IUniV3NPM(npm).positions.selector;
         assembly ("memory-safe") {
             // Write the abi-encoded calldata into memory.
             mstore(0, selector)
