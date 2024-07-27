@@ -22,7 +22,11 @@ contract EphemeralAllPositionsByOwner is PositionUtils {
     /// @param dex DEX
     /// @param npm Nonfungible position manager
     /// @param owner The address that owns the NFTs
-    function allPositions(DEX dex, address npm, address owner) public payable returns (PositionState[] memory positions) {
+    function allPositions(
+        DEX dex,
+        address npm,
+        address owner
+    ) public payable returns (PositionState[] memory positions) {
         uint256 balance = NPMCaller.balanceOf(INPM(npm), owner);
         positions = new PositionState[](balance);
         unchecked {

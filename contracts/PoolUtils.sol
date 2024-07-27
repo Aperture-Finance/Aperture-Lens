@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
+import {DEX} from "./Dex.sol";
+import {ISlipStreamCLPool} from "./interfaces/ISlipStreamCLPool.sol";
 import {FullMath} from "@aperture_finance/uni-v3-lib/src/FullMath.sol";
 import {IUniswapV3Pool, PoolCaller, V3PoolCallee} from "@aperture_finance/uni-v3-lib/src/PoolCaller.sol";
 import {TickBitmap} from "@aperture_finance/uni-v3-lib/src/TickBitmap.sol";
@@ -71,30 +73,45 @@ abstract contract PoolUtils {
     /// @return feeGrowthInside0X128 The all-time fee growth in token0, per unit of liquidity, inside the position's tick boundaries
     /// @return feeGrowthInside1X128 The all-time fee growth in token1, per unit of liquidity, inside the position's tick boundaries
     function getFeeGrowthInside(
-        V3PoolCallee pool,
+        DEX dex,
+        address pool,
         int24 tickLower,
         int24 tickUpper,
         int24 tickCurrent
     ) internal view returns (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) {
-        PoolCaller.TickInfo memory lower = pool.ticks(tickLower);
-        PoolCaller.TickInfo memory upper = pool.ticks(tickUpper);
-
+        uint256 tickLowerFeeGrowthOutside0X128;
+        uint256 tickLowerFeeGrowthOutside1X128;
+        uint256 tickUpperFeeGrowthOutside0X128;
+        uint256 tickUpperFeeGrowthOutside1X128;
+        if (dex == DEX.SlipStream) {
+            (, , , tickLowerFeeGrowthOutside0X128, tickLowerFeeGrowthOutside1X128, , , , , ) = ISlipStreamCLPool(pool)
+                .ticks(tickLower);
+            (, , , tickUpperFeeGrowthOutside0X128, tickUpperFeeGrowthOutside1X128, , , , , ) = ISlipStreamCLPool(pool)
+                .ticks(tickUpper);
+        } else {
+            (, , tickLowerFeeGrowthOutside0X128, tickLowerFeeGrowthOutside1X128, , , , ) = IUniswapV3Pool(pool).ticks(
+                tickLower
+            );
+            (, , tickUpperFeeGrowthOutside0X128, tickUpperFeeGrowthOutside1X128, , , , ) = IUniswapV3Pool(pool).ticks(
+                tickUpper
+            );
+        }
         unchecked {
             if (tickCurrent < tickLower) {
-                feeGrowthInside0X128 = lower.feeGrowthOutside0X128 - upper.feeGrowthOutside0X128;
-                feeGrowthInside1X128 = lower.feeGrowthOutside1X128 - upper.feeGrowthOutside1X128;
+                feeGrowthInside0X128 = tickLowerFeeGrowthOutside0X128 - tickUpperFeeGrowthOutside0X128;
+                feeGrowthInside1X128 = tickLowerFeeGrowthOutside1X128 - tickUpperFeeGrowthOutside1X128;
             } else if (tickCurrent >= tickUpper) {
-                feeGrowthInside0X128 = upper.feeGrowthOutside0X128 - lower.feeGrowthOutside0X128;
-                feeGrowthInside1X128 = upper.feeGrowthOutside1X128 - lower.feeGrowthOutside1X128;
+                feeGrowthInside0X128 = tickUpperFeeGrowthOutside0X128 - tickLowerFeeGrowthOutside0X128;
+                feeGrowthInside1X128 = tickUpperFeeGrowthOutside1X128 - tickLowerFeeGrowthOutside1X128;
             } else {
                 feeGrowthInside0X128 =
-                    pool.feeGrowthGlobal0X128() -
-                    lower.feeGrowthOutside0X128 -
-                    upper.feeGrowthOutside0X128;
+                    V3PoolCallee.wrap(pool).feeGrowthGlobal0X128() -
+                    tickLowerFeeGrowthOutside0X128 -
+                    tickUpperFeeGrowthOutside0X128;
                 feeGrowthInside1X128 =
-                    pool.feeGrowthGlobal1X128() -
-                    lower.feeGrowthOutside1X128 -
-                    upper.feeGrowthOutside1X128;
+                    V3PoolCallee.wrap(pool).feeGrowthGlobal1X128() -
+                    tickLowerFeeGrowthOutside1X128 -
+                    tickUpperFeeGrowthOutside1X128;
             }
         }
     }

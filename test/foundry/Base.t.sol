@@ -41,6 +41,7 @@ abstract contract BaseTest is
     address internal token0;
     address internal token1;
     uint24 internal constant fee = 500;
+    int24 internal constant tickSpacingSlipStream = 100;
 
     address internal factory;
     address internal pool;
@@ -53,7 +54,11 @@ abstract contract BaseTest is
         factory = INPM(npm).factory();
         WETH = INPM(npm).WETH9();
         (token0, token1) = (WETH < USDC).switchIf(USDC, WETH);
-        pool = IUniswapV3Factory(factory).getPool(token0, token1, fee);
+        if (dex == DEX.SlipStream) {
+            pool = ISlipStreamCLFactory(factory).getPool(token0, token1, tickSpacingSlipStream);
+        } else {
+            pool = IUniswapV3Factory(factory).getPool(token0, token1, fee);
+        }
         tickSpacing = V3PoolCallee.wrap(pool).tickSpacing();
         token0Unit = 10 ** IERC20Metadata(token0).decimals();
         token1Unit = 10 ** IERC20Metadata(token1).decimals();

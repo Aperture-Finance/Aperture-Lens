@@ -10,16 +10,28 @@ contract TickLensTest is BaseTest, PoolUtils {
     function verifyTicks(PopulatedTick[] memory populatedTicks) internal view {
         for (uint256 i; i < populatedTicks.length; ++i) {
             PopulatedTick memory populatedTick = populatedTicks[i];
-            (
-                uint128 liquidityGross,
-                int128 liquidityNet,
-                uint256 feeGrowthOutside0X128,
-                uint256 feeGrowthOutside1X128,
-                ,
-                ,
-                ,
+            uint128 liquidityGross;
+            int128 liquidityNet;
+            uint256 feeGrowthOutside0X128;
+            uint256 feeGrowthOutside1X128;
+            if (dex == DEX.SlipStream) {
+                (
+                    liquidityGross,
+                    liquidityNet,
+                    ,
+                    feeGrowthOutside0X128,
+                    feeGrowthOutside1X128,
+                    ,
+                    ,
+                    ,
+                    ,
 
-            ) = IUniswapV3Pool(pool).ticks(populatedTick.tick);
+                ) = ISlipStreamCLPool(pool).ticks(populatedTick.tick);
+            } else {
+                (liquidityGross, liquidityNet, feeGrowthOutside0X128, feeGrowthOutside1X128, , , , ) = IUniswapV3Pool(
+                    pool
+                ).ticks(populatedTick.tick);
+            }
             assertEq(liquidityGross, populatedTick.liquidityGross, "liquidityGross");
             assertEq(liquidityNet, populatedTick.liquidityNet, "liquidityNet");
             assertEq(feeGrowthOutside0X128, populatedTick.feeGrowthOutside0X128, "feeGrowthOutside0X128");
@@ -31,6 +43,7 @@ contract TickLensTest is BaseTest, PoolUtils {
         int24 tick = currentTick();
         try
             new EphemeralGetPopulatedTicksInRange(
+                dex,
                 V3PoolCallee.wrap(pool),
                 tick - 128 * tickSpacing,
                 tick + 128 * tickSpacing
@@ -46,6 +59,13 @@ contract TickLensTest is BaseTest, PoolUtils {
 contract PCSV3TickLensTest is TickLensTest {
     function setUp() public override {
         dex = DEX.PancakeSwapV3;
+        super.setUp();
+    }
+}
+
+contract SlipStreamTickLensTest is TickLensTest {
+    function setUp() public override {
+        dex = DEX.SlipStream;
         super.setUp();
     }
 }

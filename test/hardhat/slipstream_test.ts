@@ -1,27 +1,21 @@
-import { TickMath } from "@uniswap/v3-sdk";
 import { expect } from "chai";
 import { Address, ContractFunctionReturnType, createPublicClient, getContract, http, toHex } from "viem";
 import {
-  AutomatedMarketMakerEnum,
   getAllPositionsByOwner,
   getPopulatedTicksInRange,
   getPositionDetails,
   getPositions,
-  getPositionsSlots,
-  getStaticSlots,
   getStorageAt,
-  getTickBitmapSlots,
-  getTicksSlots,
 } from "../../src/viem";
 import {
   EphemeralGetPositions__factory,
-  EphemeralPoolSlots__factory,
   ISlipStreamCLFactory__factory,
   ISlipStreamNonfungiblePositionManager__factory,
 } from "../../typechain";
 import { base } from "viem/chains";
 import 'dotenv/config';
-import SlipStreamPoolAbi from './SlipStreamPool_abi.json';
+import { AutomatedMarketMakerEnum } from "../../src/viem/amm";
+import { ISlipStreamCLPool__factory } from "../../typechain/factories/contracts/interfaces";
 
 const AMM = AutomatedMarketMakerEnum.enum.SLIPSTREAM;
 const SLIPSTREAM_NPM = "0x827922686190790b37229fd06084350E74485b72";
@@ -56,7 +50,7 @@ describe("Pool lens test with SlipStream on Base", () => {
     console.log(`Running SlipStream tests on Base mainnet at block number ${blockNumber}...`);
     pool = await factoryContract.read.getPool([WETH_ADDRESS, USDC_ADDRESS, /*tickSpacing=*/100], { blockNumber });
     poolContract = getContract({
-      abi: SlipStreamPoolAbi,
+      abi: ISlipStreamCLPool__factory.abi,
       client: publicClient,
       address: pool,
     });
@@ -79,7 +73,7 @@ describe("Pool lens test with SlipStream on Base", () => {
 
   it("Test getting populated ticks", async () => {
     const [, tickCurrent] = await poolContract.read.slot0({ blockNumber });
-    const ticks = await getPopulatedTicksInRange(pool, tickCurrent, tickCurrent, publicClient, blockNumber);
+    const ticks = await getPopulatedTicksInRange(AMM, pool, tickCurrent, tickCurrent, publicClient, blockNumber);
     await Promise.all(
       ticks.map(async ({ tick, liquidityGross, liquidityNet }) => {
         const [_liquidityGross, _liquidityNet] = await poolContract.read.ticks([tick], { blockNumber });
@@ -98,7 +92,7 @@ describe("Pool lens test with SlipStream on Base", () => {
     expect(tokenId).to.be.eq(43484n);
     const [_sqrtPriceX96, _tick] = await getContract({
       address: await factoryContract.read.getPool([token0, token1, tickSpacing], { blockNumber }),
-      abi: SlipStreamPoolAbi,
+      abi: ISlipStreamCLPool__factory.abi,
       client: publicClient,
     }).read.slot0({ blockNumber });
     expect(sqrtPriceX96).to.be.eq(_sqrtPriceX96);
@@ -139,48 +133,5 @@ describe("Pool lens test with SlipStream on Base", () => {
     const owner = await npm.read.ownerOf([tokenId], { blockNumber });
     const posArr = await getAllPositionsByOwner(AMM, SLIPSTREAM_NPM, owner, publicClient, blockNumber);
     await verifyPositionDetails(posArr);
-  });
-
-  async function verifySlots(slots: ContractFunctionReturnType<typeof EphemeralPoolSlots__factory.abi>) {
-    expect(slots.some(({ data }) => data > 0)).to.be.true;
-    const address = pool;
-    const altSlots = await Promise.all(
-      slots.slice(0, 4).map(({ slot }) => publicClient.getStorageAt({ address, slot: toHex(slot), blockNumber })),
-    );
-    for (let i = 0; i < altSlots.length; i++) {
-      expect(slots[i].data).to.be.eq(BigInt(altSlots[i]!));
-    }
-  }
-
-  it("Test getting static storage slots", async () => {
-    const slots = await getStaticSlots(AMM, pool, publicClient, blockNumber);
-    await verifySlots(slots);
-  });
-
-  it("Test getting populated ticks slots", async () => {
-    const slots = await getTicksSlots(AMM, pool, TickMath.MIN_TICK, TickMath.MAX_TICK, publicClient, blockNumber);
-    await verifySlots(slots);
-  });
-
-  it("Test getting tick bitmap slots", async () => {
-    const slots = await getTickBitmapSlots(AMM, pool, publicClient, blockNumber);
-    await verifySlots(slots);
-  });
-
-  it("Test getting positions mapping slots", async () => {
-    const logs = await poolContract.getEvents.Mint(
-      {},
-      {
-        fromBlock: blockNumber - 1000n,
-        toBlock: blockNumber,
-      },
-    );
-    const positions = logs.map(({ args: { owner, tickLower, tickUpper } }) => ({
-      owner: owner!,
-      tickLower: tickLower!,
-      tickUpper: tickUpper!,
-    }));
-    const slots = await getPositionsSlots(AMM, pool, positions, publicClient, blockNumber);
-    await verifySlots(slots);
   });
 });

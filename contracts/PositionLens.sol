@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
+import {DEX} from "./Dex.sol";
 import {LiquidityAmounts} from "@aperture_finance/uni-v3-lib/src/LiquidityAmounts.sol";
 import {PoolCaller, V3PoolCallee} from "@aperture_finance/uni-v3-lib/src/PoolCaller.sol";
 import {TickMath} from "@aperture_finance/uni-v3-lib/src/TickMath.sol";
@@ -20,6 +21,7 @@ contract PositionLens is PoolUtils {
     /// @return tokensOwed0 The amount of token0 owed to the position
     /// @return tokensOwed1 The amount of token1 owed to the position
     function getFeesOwed(
+        DEX dex,
         V3PoolCallee pool,
         address owner,
         int24 tickLower,
@@ -31,7 +33,8 @@ contract PositionLens is PoolUtils {
 
         if (info.liquidity != 0) {
             (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) = getFeeGrowthInside(
-                pool,
+                dex,
+                V3PoolCallee.unwrap(pool),
                 tickLower,
                 tickUpper,
                 tickCurrent
@@ -54,6 +57,7 @@ contract PositionLens is PoolUtils {
     /// @return amount0 The total amount of token0 held in the position
     /// @return amount1 The total amount of token1 held in the position
     function getTotalAmounts(
+        DEX dex,
         V3PoolCallee pool,
         address owner,
         int24 tickLower,
@@ -70,7 +74,7 @@ contract PositionLens is PoolUtils {
                 tickUpper.getSqrtRatioAtTick(),
                 info.liquidity
             );
-            (uint256 fees0, uint256 fees1) = getFeesOwed(pool, owner, tickLower, tickUpper);
+            (uint256 fees0, uint256 fees1) = getFeesOwed(dex, pool, owner, tickLower, tickUpper);
             amount0 += fees0;
             amount1 += fees1;
         }

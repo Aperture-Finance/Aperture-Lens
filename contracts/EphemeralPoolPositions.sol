@@ -2,23 +2,25 @@
 pragma solidity ^0.8.0;
 
 import "./PoolUtils.sol";
+import {DEX} from "./Dex.sol";
 
 /// @notice A lens that batches fetching of the `positions` mapping for a Uniswap v3 pool without deployment
 /// @author Aperture Finance
 /// @dev The return data can be accessed externally by `eth_call` without a `to` address or internally by catching the
 /// revert data, and decoded by `abi.decode(data, (Slot[]))`
 contract EphemeralPoolPositions is PoolUtils {
-    constructor(V3PoolCallee pool, PositionKey[] memory keys) payable {
-        Slot[] memory slots = getPositions(pool, keys);
+    constructor(DEX dex, V3PoolCallee pool, PositionKey[] memory keys) payable {
+        Slot[] memory slots = getPositions(dex, pool, keys);
         bytes memory returnData = abi.encode(slots);
         assembly ("memory-safe") {
             revert(add(returnData, 0x20), mload(returnData))
         }
     }
 
-    function getPositionsSlot() internal pure virtual returns (uint256) {
-        // Storage slot of the `positions` mapping in UniswapV3Pool.
-        return 7;
+    function getPositionsSlot(DEX dex) internal pure virtual returns (uint256) {
+        if (dex == DEX.UniswapV3) return 7;
+        if (dex == DEX.PancakeSwapV3) return 8;
+        revert("EphemeralPoolPositions: invalid or unsupported DEX");
     }
 
     /// @notice Get liquidity positions in a pool
@@ -26,9 +28,13 @@ contract EphemeralPoolPositions is PoolUtils {
     /// @param pool The address of the pool for which to fetch the tick bitmap
     /// @param keys The position keys to fetch
     /// @return slots An array of storage slots and their raw data
-    function getPositions(V3PoolCallee pool, PositionKey[] memory keys) public payable returns (Slot[] memory slots) {
+    function getPositions(
+        DEX dex,
+        V3PoolCallee pool,
+        PositionKey[] memory keys
+    ) public payable returns (Slot[] memory slots) {
         unchecked {
-            uint256 POSITIONS_SLOT = getPositionsSlot();
+            uint256 POSITIONS_SLOT = getPositionsSlot(dex);
             uint256 length = keys.length;
             // each position occupies 4 storage slots
             slots = new Slot[](length << 2);
@@ -54,14 +60,5 @@ contract EphemeralPoolPositions is PoolUtils {
                 slots[j++] = Slot(slot, data);
             }
         }
-    }
-}
-
-contract EphemeralPCSV3PoolPositions is EphemeralPoolPositions {
-    constructor(V3PoolCallee pool, PositionKey[] memory keys) payable EphemeralPoolPositions(pool, keys) {}
-
-    function getPositionsSlot() internal pure override returns (uint256) {
-        // Storage slot of the `positions` mapping in PancakeSwapV3Pool.
-        return 8;
     }
 }

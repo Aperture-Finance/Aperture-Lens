@@ -2,23 +2,25 @@
 pragma solidity ^0.8.0;
 
 import "./PoolUtils.sol";
+import {DEX} from "./Dex.sol";
 
 /// @notice A lens that fetches raw storage slots of the `ticks` mapping in a range for a Uniswap v3 pool without deployment
 /// @author Aperture Finance
 /// @dev The return data can be accessed externally by `eth_call` without a `to` address or internally by catching the
 /// revert data, and decoded by `abi.decode(data, (Slot[]))`
 contract EphemeralPoolTicks is PoolUtils {
-    constructor(V3PoolCallee pool, int24 tickLower, int24 tickUpper) payable {
-        Slot[] memory slots = getPopulatedTicksInRange(pool, tickLower, tickUpper);
+    constructor(DEX dex, V3PoolCallee pool, int24 tickLower, int24 tickUpper) payable {
+        Slot[] memory slots = getPopulatedTicksInRange(dex, pool, tickLower, tickUpper);
         bytes memory returnData = abi.encode(slots);
         assembly ("memory-safe") {
             revert(add(returnData, 0x20), mload(returnData))
         }
     }
 
-    function getTicksSlot() internal pure virtual returns (uint256) {
-        // Storage slot of the `ticks` mapping in UniswapV3Pool.
-        return 5;
+    function getTicksSlot(DEX dex) internal pure virtual returns (uint256) {
+        if (dex == DEX.UniswapV3) return 5;
+        if (dex == DEX.PancakeSwapV3) return 6;
+        revert("EphemeralPoolTicks: invalid or unsupported DEX");
     }
 
     /// @notice Get all the tick data for the populated ticks from tickLower to tickUpper
@@ -28,6 +30,7 @@ contract EphemeralPoolTicks is PoolUtils {
     /// @param tickUpper The upper tick boundary of the populated ticks to fetch
     /// @return slots An array of storage slots and their raw data
     function getPopulatedTicksInRange(
+        DEX dex,
         V3PoolCallee pool,
         int24 tickLower,
         int24 tickUpper
@@ -44,6 +47,7 @@ contract EphemeralPoolTicks is PoolUtils {
             uint256 idx;
             for (int16 wordPos = wordPosLower; wordPos <= wordPosUpper; ++wordPos) {
                 idx = populateTicksInWord(
+                    dex,
                     pool,
                     wordPos,
                     tickSpacing,
@@ -57,6 +61,7 @@ contract EphemeralPoolTicks is PoolUtils {
 
     /// @notice Get the tick data for all populated ticks in a word of the tick bitmap
     function populateTicksInWord(
+        DEX dex,
         V3PoolCallee pool,
         int16 wordPos,
         int24 tickSpacing,
@@ -65,7 +70,7 @@ contract EphemeralPoolTicks is PoolUtils {
         uint256 idx
     ) internal view returns (uint256) {
         unchecked {
-            uint256 TICKS_SLOT = getTicksSlot();
+            uint256 TICKS_SLOT = getTicksSlot(dex);
             for (uint256 bitPos; bitPos < 256; ++bitPos) {
                 //slither-disable-next-line incorrect-shift
                 if (bitmap & (1 << bitPos) != 0) {
@@ -111,18 +116,5 @@ contract EphemeralPoolTicks is PoolUtils {
             }
             return idx;
         }
-    }
-}
-
-contract EphemeralPCSV3PoolTicks is EphemeralPoolTicks {
-    constructor(
-        V3PoolCallee pool,
-        int24 tickLower,
-        int24 tickUpper
-    ) payable EphemeralPoolTicks(pool, tickLower, tickUpper) {}
-
-    function getTicksSlot() internal pure override returns (uint256) {
-        // Storage slot of the `ticks` mapping in PancakeSwapV3Pool.
-        return 6;
     }
 }
