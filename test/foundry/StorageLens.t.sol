@@ -25,7 +25,7 @@ contract StorageLensTest is BaseTest {
 
     /// forge-config: default.fuzz.runs = 16
     /// forge-config: ci.fuzz.runs = 16
-    function testFuzz_extsload(bytes32 slot) public {
+    function testFuzz_extsload(bytes32 slot) public virtual {
         bytes32[] memory slots = new bytes32[](1);
         slots[0] = slot;
         bytes32[] memory values = EphemeralStorageLens(pool).extsload(slots);
@@ -37,5 +37,26 @@ contract PCSV3StorageLensTest is StorageLensTest {
     function setUp() public override {
         dex = DEX.PancakeSwapV3;
         super.setUp();
+    }
+
+    // Trivially override so that the "forge-config" settings are applied.
+    /// forge-config: default.fuzz.runs = 16
+    /// forge-config: ci.fuzz.runs = 16
+    function testFuzz_extsload(bytes32 slot) public override {
+        super.testFuzz_extsload(slot);
+    }
+}
+
+contract SlipStreamStorageLensTest is StorageLensTest {
+    function setUp() public override {
+        dex = DEX.SlipStream;
+        super.setUp();
+    }
+
+    // Trivially override so that the "forge-config" settings are applied.
+    /// forge-config: default.fuzz.runs = 16
+    /// forge-config: ci.fuzz.runs = 16
+    function testFuzz_extsload(bytes32 slot) public override {
+        super.testFuzz_extsload(slot);
     }
 }

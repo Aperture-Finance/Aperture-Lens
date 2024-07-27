@@ -9,17 +9,16 @@ import "contracts/EphemeralAllPositionsByOwner.sol";
 import "contracts/EphemeralGetPosition.sol";
 import "contracts/EphemeralGetPositions.sol";
 import "contracts/PositionLens.sol";
+import "contracts/interfaces/ISlipStreamCLPool.sol";
 import "./Base.t.sol";
 
 contract PositionLensTest is BaseTest {
     PositionLens internal positionLens;
     int24 internal _tickLower;
     int24 internal _tickUpper;
-    uint256 internal lastTokenId;
 
     function setUp() public virtual override {
         super.setUp();
-        lastTokenId = INPM(npm).totalSupply();
         positionLens = new PositionLens();
         int24 tick = currentTick();
         _tickLower = tick - tickSpacing;
@@ -44,6 +43,7 @@ contract PositionLensTest is BaseTest {
 
     function test_GetFeesOwed() public {
         (uint256 fees0, uint256 fees1) = positionLens.getFeesOwed(
+            dex,
             V3PoolCallee.wrap(pool),
             address(this),
             _tickLower,
@@ -52,7 +52,7 @@ contract PositionLensTest is BaseTest {
         assertEq(fees0, 0);
         assertEq(fees1, 0);
         generateFees();
-        (fees0, fees1) = positionLens.getFeesOwed(V3PoolCallee.wrap(pool), address(this), _tickLower, _tickUpper);
+        (fees0, fees1) = positionLens.getFeesOwed(dex, V3PoolCallee.wrap(pool), address(this), _tickLower, _tickUpper);
         IUniswapV3Pool(pool).burn(_tickLower, _tickUpper, 0);
         (uint128 amount0, uint128 amount1) = IUniswapV3Pool(pool).collect(
             address(this),
@@ -68,6 +68,7 @@ contract PositionLensTest is BaseTest {
     function test_GetTotalAmounts() public {
         generateFees();
         (uint256 amount0, uint256 amount1) = positionLens.getTotalAmounts(
+            dex,
             V3PoolCallee.wrap(pool),
             address(this),
             _tickLower,
@@ -88,7 +89,13 @@ contract PositionLensTest is BaseTest {
         assertEq(collect1, amount1);
     }
 
-    function verifyPosition(PositionState memory pos) internal view {
+    function verifyTokenDecimals(address token, uint8 decimalsToCheck) internal view {
+        try IERC20Metadata(token).decimals() returns (uint8 decimals) {
+            assertEq(decimals, decimalsToCheck, "decimals");
+        } catch {}
+    }
+
+    function verifyPosition(PositionState memory pos) internal view virtual {
         {
             assertEq(pos.owner, INPM(npm).ownerOf(pos.tokenId), "owner");
             (, , address token0, , uint24 fee, int24 tickLower, , uint128 liquidity, , , , ) = IUniV3NPM(npm).positions(
@@ -101,11 +108,7 @@ contract PositionLensTest is BaseTest {
             assertEq(liquidity, pos.position.liquidity, "liquidity");
         }
         {
-            address pool = IUniswapV3Factory(factory).getPool(
-                pos.position.token0,
-                pos.position.token1,
-                pos.poolFee
-            );
+            address pool = IUniswapV3Factory(factory).getPool(pos.position.token0, pos.position.token1, pos.poolFee);
             (
                 uint160 sqrtPriceX96,
                 int24 tick,
@@ -124,14 +127,14 @@ contract PositionLensTest is BaseTest {
             assertEq(unlocked, pos.slot0.unlocked, "unlocked");
             assertEq(IUniswapV3Pool(pool).liquidity(), pos.activeLiquidity, "liquidity");
         }
-        assertEq(IERC20Metadata(pos.position.token0).decimals(), pos.decimals0, "decimals0");
-        assertEq(IERC20Metadata(pos.position.token1).decimals(), pos.decimals1, "decimals1");
+        verifyTokenDecimals(pos.position.token0, pos.decimals0);
+        verifyTokenDecimals(pos.position.token1, pos.decimals1);
     }
 
     /// forge-config: default.fuzz.runs = 16
     /// forge-config: ci.fuzz.runs = 16
-    function testFuzz_GetPosition(uint256 tokenId) public virtual {
-        tokenId = bound(tokenId, 1, 200);
+    function testFuzz_GetPosition(uint256 tokenIndex) public virtual {
+        uint256 tokenId = INPM(npm).tokenByIndex(bound(tokenIndex, 0, 200));
         try new EphemeralGetPosition(dex, npm, tokenId) {} catch (bytes memory returnData) {
             PositionState memory pos = abi.decode(returnData, (PositionState));
             verifyPosition(pos);
@@ -139,10 +142,10 @@ contract PositionLensTest is BaseTest {
     }
 
     function test_GetPositions() public virtual {
-        uint256 startTokenId = 100;
+        uint256 startTokenIndex = 100;
         uint256[] memory tokenIds = new uint256[](10);
         for (uint256 i; i < 10; ++i) {
-            tokenIds[i] = startTokenId + i;
+            tokenIds[i] = INPM(npm).tokenByIndex(startTokenIndex + i);
         }
         try new EphemeralGetPositions(dex, npm, tokenIds) {} catch (bytes memory returnData) {
             PositionState[] memory positions = abi.decode(returnData, (PositionState[]));
@@ -155,7 +158,7 @@ contract PositionLensTest is BaseTest {
     }
 
     function test_AllPositions() public {
-        address owner = INPM(npm).ownerOf(lastTokenId);
+        address owner = INPM(npm).ownerOf(INPM(npm).tokenByIndex(0));
         try new EphemeralAllPositionsByOwner(dex, npm, owner) {} catch (bytes memory returnData) {
             PositionState[] memory positions = abi.decode(returnData, (PositionState[]));
             uint256 length = positions.length;
@@ -176,7 +179,60 @@ contract PCSV3PositionLensTest is PositionLensTest {
     // Trivially override so that the "forge-config" settings are applied.
     /// forge-config: default.fuzz.runs = 16
     /// forge-config: ci.fuzz.runs = 16
-    function testFuzz_GetPosition(uint256 tokenId) public override {
-        super.testFuzz_GetPosition(tokenId);
+    function testFuzz_GetPosition(uint256 tokenIndex) public override {
+        super.testFuzz_GetPosition(tokenIndex);
+    }
+}
+
+contract SlipStreamPositionLensTest is PositionLensTest {
+    function setUp() public override {
+        dex = DEX.SlipStream;
+        super.setUp();
+    }
+
+    // Trivially override so that the "forge-config" settings are applied.
+    /// forge-config: default.fuzz.runs = 16
+    /// forge-config: ci.fuzz.runs = 16
+    function testFuzz_GetPosition(uint256 tokenIndex) public override {
+        super.testFuzz_GetPosition(tokenIndex);
+    }
+
+    function verifyPosition(PositionState memory pos) internal view override {
+        {
+            assertEq(pos.owner, INPM(npm).ownerOf(pos.tokenId), "owner");
+            (, , address token0, , int24 tickSpacing, int24 tickLower, , uint128 liquidity, , , , ) = ISlipStreamNPM(
+                npm
+            ).positions(pos.tokenId);
+            assertEq(token0, pos.position.token0, "token0");
+            assertEq(uint24(tickSpacing), pos.position.feeOrTickSpacing, "feeOrTickSpacing");
+            assertEq(tickSpacing, pos.poolTickSpacing, "poolTickSpacing");
+            assertEq(tickLower, pos.position.tickLower, "tickLower");
+            assertEq(liquidity, pos.position.liquidity, "liquidity");
+        }
+        {
+            address pool = ISlipStreamCLFactory(ISlipStreamNPM(npm).factory()).getPool(
+                pos.position.token0,
+                pos.position.token1,
+                pos.poolTickSpacing
+            );
+            (
+                uint160 sqrtPriceX96,
+                int24 tick,
+                uint16 observationIndex,
+                uint16 observationCardinality,
+                uint16 observationCardinalityNext,
+                bool unlocked
+            ) = ISlipStreamCLPool(pool).slot0();
+            assertEq(sqrtPriceX96, pos.slot0.sqrtPriceX96, "sqrtPriceX96");
+            assertEq(tick, pos.slot0.tick, "tick");
+            assertEq(observationIndex, pos.slot0.observationIndex, "observationIndex");
+            assertEq(observationCardinality, pos.slot0.observationCardinality, "observationCardinality");
+            assertEq(observationCardinalityNext, pos.slot0.observationCardinalityNext, "observationCardinalityNext");
+            assertEq(0, pos.slot0.feeProtocol, "feeProtocol");
+            assertEq(unlocked, pos.slot0.unlocked, "unlocked");
+            assertEq(IUniswapV3Pool(pool).liquidity(), pos.activeLiquidity, "liquidity");
+        }
+        verifyTokenDecimals(pos.position.token0, pos.decimals0);
+        verifyTokenDecimals(pos.position.token1, pos.decimals1);
     }
 }

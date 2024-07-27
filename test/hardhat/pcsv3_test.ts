@@ -3,7 +3,6 @@ import { expect } from "chai";
 import { ContractFunctionReturnType, createPublicClient, getContract, http, toHex } from "viem";
 import { bsc } from "viem/chains";
 import {
-  AutomatedMarketMakerEnum,
   getAllPositionsByOwner,
   getPopulatedTicksInRange,
   getPositionDetails,
@@ -22,6 +21,7 @@ import {
 } from "../../typechain";
 import { computePoolAddress } from "@pancakeswap/v3-sdk";
 import { Token } from "@pancakeswap/sdk";
+import { AutomatedMarketMakerEnum } from "../../src/viem/amm";
 
 const AMM = AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3;
 const PCSV3_NPM = "0x46A15B0b27311cedF172AB29E4f4766fbE7F4364";
@@ -77,7 +77,7 @@ describe("Pool lens test with PCSV3 on BSC", () => {
 
   it("Test getting populated ticks", async () => {
     const [, tickCurrent] = await poolContract.read.slot0({ blockNumber });
-    const ticks = await getPopulatedTicksInRange(pool, tickCurrent, tickCurrent, publicClient, blockNumber);
+    const ticks = await getPopulatedTicksInRange(AMM, pool, tickCurrent, tickCurrent, publicClient, blockNumber);
     await Promise.all(
       ticks.map(async ({ tick, liquidityGross, liquidityNet }) => {
         const [_liquidityGross, _liquidityNet] = await poolContract.read.ticks([tick], { blockNumber });

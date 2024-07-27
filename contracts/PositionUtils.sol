@@ -11,12 +11,8 @@ import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV
 import {IPancakeV3Factory} from "@pancakeswap/v3-core/contracts/interfaces/IPancakeV3Factory.sol";
 import {ERC20Callee} from "./libraries/ERC20Caller.sol";
 import {PoolUtils} from "./PoolUtils.sol";
-
-enum DEX {
-    UniswapV3,
-    PancakeSwapV3,
-    SlipStream
-}
+import {DEX} from "./Dex.sol";
+import "./interfaces/ISlipStreamCLFactory.sol";
 
 struct Slot0 {
     uint160 sqrtPriceX96;
@@ -76,18 +72,6 @@ struct PositionState {
     uint8 decimals1;
 }
 
-// Partial interface for the SlipStream factory. SlipStream factory is named "CLFactory" and "CL" presumably stands for concentrated liquidity.
-// https://github.com/velodrome-finance/slipstream/blob/main/contracts/core/interfaces/ICLFactory.sol
-interface ISlipStreamCLFactory {
-    /// @notice Returns the pool address for a given pair of tokens and a tick spacing, or address 0 if it does not exist
-    /// @dev tokenA and tokenB may be passed in either token0/token1 or token1/token0 order
-    /// @param tokenA The contract address of either token0 or token1
-    /// @param tokenB The contract address of the other token
-    /// @param tickSpacing The tick spacing of the pool
-    /// @return pool The pool address
-    function getPool(address tokenA, address tokenB, int24 tickSpacing) external view returns (address pool);
-}
-
 /// @title Position utility contract
 /// @author Aperture Finance
 /// @notice Base contract for Uniswap v3 that peeks into the current state of position and pool info
@@ -128,9 +112,15 @@ abstract contract PositionUtils is PoolUtils {
         state.poolTickSpacing = pool.tickSpacing();
         state.activeLiquidity = pool.liquidity();
         slot0InPlace(pool, state.slot0);
+        // Manually adjust `feeProtocol` and `unlocked` fields for SlipStream as `feeProtocol` doesn't exist on SlipStream.
+        if (dex == DEX.SlipStream) {
+            state.slot0.feeProtocol = 0;
+            state.slot0.unlocked = true;
+        }
         if (position.liquidity != 0) {
             (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) = getFeeGrowthInside(
-                pool,
+                dex,
+                state.pool,
                 position.tickLower,
                 position.tickUpper,
                 state.slot0.tick
@@ -154,7 +144,11 @@ abstract contract PositionUtils is PoolUtils {
     /// @param tokenId The ID of the token that represents the position
     /// @param pos The position pointer to be updated in place
     /// @return exists Whether the position exists
-    function positionInPlace(address npm, uint256 tokenId, PositionFull memory pos) internal view returns (bool exists) {
+    function positionInPlace(
+        address npm,
+        uint256 tokenId,
+        PositionFull memory pos
+    ) internal view returns (bool exists) {
         bytes4 selector = IUniV3NPM(npm).positions.selector;
         assembly ("memory-safe") {
             // Write the abi-encoded calldata into memory.

@@ -3,14 +3,15 @@ pragma solidity ^0.8.0;
 
 import "@pancakeswap/v3-core/contracts/interfaces/IPancakeV3Pool.sol";
 import "./PoolUtils.sol";
+import {DEX} from "./Dex.sol";
 
 /// @notice A lens for fetching static state variables in a Uniswap v3 pool without deployment
 /// @author Aperture Finance
 /// @dev The return data can be accessed externally by `eth_call` without a `to` address or internally by catching the
 /// revert data, and decoded by `abi.decode(data, (Slot[]))`
 contract EphemeralPoolSlots is PoolUtils {
-    constructor(V3PoolCallee pool) payable {
-        Slot[] memory slots = getSlots(pool);
+    constructor(DEX dex, V3PoolCallee pool) payable {
+        Slot[] memory slots = getSlots(dex, pool);
         bytes memory returnData = abi.encode(slots);
         assembly ("memory-safe") {
             revert(add(returnData, 0x20), mload(returnData))
@@ -21,7 +22,20 @@ contract EphemeralPoolSlots is PoolUtils {
     /// @dev Public function to expose the abi for easier decoding using TypeChain
     /// @param pool The Uniswap v3 pool
     /// @return slots An array of storage slots and their raw data
-    function getSlots(V3PoolCallee pool) public payable returns (Slot[] memory slots) {
+    function getSlots(DEX dex, V3PoolCallee pool) public payable returns (Slot[] memory slots) {
+        if (dex == DEX.UniswapV3) {
+            return getUniV3PoolSlots(pool);
+        } else if (dex == DEX.PancakeSwapV3) {
+            return getPCSV3PoolSlots(pool);
+        }
+        revert("EphemeralPoolSlots: invalid or unsupported DEX");
+    }
+
+    /// @notice Get the static storage slots of a Uniswap v3 pool
+    /// @dev Public function to expose the abi for easier decoding using TypeChain
+    /// @param pool The Uniswap v3 pool
+    /// @return slots An array of storage slots and their raw data
+    function getUniV3PoolSlots(V3PoolCallee pool) internal view returns (Slot[] memory slots) {
         unchecked {
             uint256 length;
             {
@@ -78,26 +92,12 @@ contract EphemeralPoolSlots is PoolUtils {
             }
         }
     }
-}
 
-/// @notice A lens for fetching static state variables in a PancakeSwap v3 pool without deployment
-/// @author Aperture Finance
-/// @dev The return data can be accessed externally by `eth_call` without a `to` address or internally by catching the
-/// revert data, and decoded by `abi.decode(data, (Slot[]))`
-contract EphemeralPCSV3PoolSlots is PoolUtils {
-    constructor(V3PoolCallee pool) payable {
-        Slot[] memory slots = getSlots(pool);
-        bytes memory returnData = abi.encode(slots);
-        assembly ("memory-safe") {
-            revert(add(returnData, 0x20), mload(returnData))
-        }
-    }
-
-    /// @notice Get the static storage slots of a pool
+    /// @notice Get the static storage slots of a PancakeSwap v3 pool
     /// @dev Public function to expose the abi for easier decoding using TypeChain
     /// @param pool The PancakeSwap v3 pool
     /// @return slots An array of storage slots and their raw data
-    function getSlots(V3PoolCallee pool) public payable returns (Slot[] memory slots) {
+    function getPCSV3PoolSlots(V3PoolCallee pool) internal view returns (Slot[] memory slots) {
         unchecked {
             uint256 length;
             {

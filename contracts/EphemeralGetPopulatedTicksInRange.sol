@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+import {DEX} from "./Dex.sol";
 import "./PoolUtils.sol";
+import "./interfaces/ISlipStreamCLPool.sol";
 
 /// @notice A lens that fetches chunks of tick data in a range for a Uniswap v3 pool without deployment
 /// @author Aperture Finance
 /// @dev The return data can be accessed externally by `eth_call` without a `to` address or internally by catching the
 /// revert data, and decoded by `abi.decode(data, (PopulatedTick[]))`
 contract EphemeralGetPopulatedTicksInRange is PoolUtils {
-    constructor(V3PoolCallee pool, int24 tickLower, int24 tickUpper) payable {
-        PopulatedTick[] memory populatedTicks = getPopulatedTicksInRange(pool, tickLower, tickUpper);
+    constructor(DEX dex, V3PoolCallee pool, int24 tickLower, int24 tickUpper) payable {
+        PopulatedTick[] memory populatedTicks = getPopulatedTicksInRange(dex, pool, tickLower, tickUpper);
         bytes memory returnData = abi.encode(populatedTicks);
         assembly ("memory-safe") {
             revert(add(returnData, 0x20), mload(returnData))
@@ -22,6 +24,7 @@ contract EphemeralGetPopulatedTicksInRange is PoolUtils {
     /// @param tickUpper The upper tick boundary of the populated ticks to fetch
     /// @return populatedTicks An array of tick data for the given word in the tick bitmap
     function getPopulatedTicksInRange(
+        DEX dex,
         V3PoolCallee pool,
         int24 tickLower,
         int24 tickUpper
@@ -37,6 +40,7 @@ contract EphemeralGetPopulatedTicksInRange is PoolUtils {
             uint256 idx;
             for (int16 wordPos = wordPosLower; wordPos <= wordPosUpper; ++wordPos) {
                 idx = populateTicksInWord(
+                    dex,
                     pool,
                     wordPos,
                     tickSpacing,
@@ -50,6 +54,7 @@ contract EphemeralGetPopulatedTicksInRange is PoolUtils {
 
     /// @notice Get the tick data for all populated ticks in a word of the tick bitmap
     function populateTicksInWord(
+        DEX dex,
         V3PoolCallee pool,
         int16 wordPos,
         int24 tickSpacing,
@@ -65,19 +70,34 @@ contract EphemeralGetPopulatedTicksInRange is PoolUtils {
                     assembly {
                         tick := mul(tickSpacing, add(shl(8, wordPos), bitPos))
                     }
-                    populateTick(pool, tick, populatedTicks[idx++]);
+                    populateTick(dex, pool, tick, populatedTicks[idx++]);
                 }
             }
             return idx;
         }
     }
 
-    function populateTick(V3PoolCallee pool, int24 tick, PopulatedTick memory populatedTick) internal view {
-        PoolCaller.TickInfo memory info = pool.ticks(tick);
+    function populateTick(DEX dex, V3PoolCallee pool, int24 tick, PopulatedTick memory populatedTick) internal view {
         populatedTick.tick = tick;
-        populatedTick.liquidityNet = info.liquidityNet;
-        populatedTick.liquidityGross = info.liquidityGross;
-        populatedTick.feeGrowthOutside0X128 = info.feeGrowthOutside0X128;
-        populatedTick.feeGrowthOutside1X128 = info.feeGrowthOutside1X128;
+        if (dex == DEX.SlipStream) {
+            (
+                populatedTick.liquidityGross,
+                populatedTick.liquidityNet,
+                ,
+                populatedTick.feeGrowthOutside0X128,
+                populatedTick.feeGrowthOutside1X128,
+                ,
+                ,
+                ,
+                ,
+
+            ) = ISlipStreamCLPool(V3PoolCallee.unwrap(pool)).ticks(tick);
+        } else {
+            PoolCaller.TickInfo memory info = pool.ticks(tick);
+            populatedTick.liquidityNet = info.liquidityNet;
+            populatedTick.liquidityGross = info.liquidityGross;
+            populatedTick.feeGrowthOutside0X128 = info.feeGrowthOutside0X128;
+            populatedTick.feeGrowthOutside1X128 = info.feeGrowthOutside1X128;
+        }
     }
 }

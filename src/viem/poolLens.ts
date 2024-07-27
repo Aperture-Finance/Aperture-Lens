@@ -2,24 +2,13 @@ import { AbiParametersToPrimitiveTypes, ExtractAbiFunction } from "abitype";
 import { Address, PublicClient } from "viem";
 import {
   EphemeralGetPopulatedTicksInRange__factory,
-  EphemeralPCSV3PoolPositions__factory,
-  EphemeralPCSV3PoolSlots__factory,
-  EphemeralPCSV3PoolTickBitmap__factory,
-  EphemeralPCSV3PoolTicks__factory,
   EphemeralPoolPositions__factory,
   EphemeralPoolSlots__factory,
   EphemeralPoolTickBitmap__factory,
   EphemeralPoolTicks__factory,
 } from "../../typechain";
 import { callEphemeralContract } from "./caller";
-import { z } from 'zod';
-
-export const AutomatedMarketMakerEnum = z.enum([
-  'UNISWAP_V3',
-  'PANCAKESWAP_V3',
-  'SLIPSTREAM',
-]);
-export type AutomatedMarketMakerEnum = z.infer<typeof AutomatedMarketMakerEnum>;
+import { ammToSolidityDexEnum, AutomatedMarketMakerEnum } from "./amm";
 
 /**
  * Fetches the liquidity within the tick range for the specified pool by deploying an ephemeral contract via `eth_call`.
@@ -32,6 +21,7 @@ export type AutomatedMarketMakerEnum = z.infer<typeof AutomatedMarketMakerEnum>;
  * @param blockNumber Optional block number to query.
  */
 export async function getPopulatedTicksInRange(
+  amm: AutomatedMarketMakerEnum,
   pool: Address,
   tickLower: number,
   tickUpper: number,
@@ -42,7 +32,7 @@ export async function getPopulatedTicksInRange(
     {
       abi: EphemeralGetPopulatedTicksInRange__factory.abi,
       bytecode: EphemeralGetPopulatedTicksInRange__factory.bytecode,
-      args: [pool, tickLower, tickUpper],
+      args: [ammToSolidityDexEnum(amm), pool, tickLower, tickUpper],
     },
     publicClient,
     blockNumber,
@@ -55,18 +45,15 @@ export async function getStaticSlots(
   publicClient: PublicClient,
   blockNumber?: bigint,
 ) {
+  if (amm === AutomatedMarketMakerEnum.enum.SLIPSTREAM) {
+    throw new Error("Not yet implemented for SLIPSTREAM");
+  }
   return await callEphemeralContract(
-    amm === AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3
-      ? {
-          abi: EphemeralPCSV3PoolSlots__factory.abi,
-          bytecode: EphemeralPCSV3PoolSlots__factory.bytecode,
-          args: [pool],
-        }
-      : {
-          abi: EphemeralPoolSlots__factory.abi,
-          bytecode: EphemeralPoolSlots__factory.bytecode,
-          args: [pool],
-        },
+    {
+      abi: EphemeralPoolSlots__factory.abi,
+      bytecode: EphemeralPoolSlots__factory.bytecode,
+      args: [ammToSolidityDexEnum(amm), pool],
+    },
     publicClient,
     blockNumber,
   );
@@ -80,18 +67,15 @@ export async function getTicksSlots(
   publicClient: PublicClient,
   blockNumber?: bigint,
 ) {
+  if (amm === AutomatedMarketMakerEnum.enum.SLIPSTREAM) {
+    throw new Error("Not yet implemented for SLIPSTREAM");
+  }
   return await callEphemeralContract(
-    amm === AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3
-      ? {
-          abi: EphemeralPCSV3PoolTicks__factory.abi,
-          bytecode: EphemeralPCSV3PoolTicks__factory.bytecode,
-          args: [pool, tickLower, tickUpper],
-        }
-      : {
-          abi: EphemeralPoolTicks__factory.abi,
-          bytecode: EphemeralPoolTicks__factory.bytecode,
-          args: [pool, tickLower, tickUpper],
-        },
+    {
+      abi: EphemeralPoolTicks__factory.abi,
+      bytecode: EphemeralPoolTicks__factory.bytecode,
+      args: [ammToSolidityDexEnum(amm), pool, tickLower, tickUpper],
+    },
     publicClient,
     blockNumber,
   );
@@ -103,18 +87,15 @@ export async function getTickBitmapSlots(
   publicClient: PublicClient,
   blockNumber?: bigint,
 ) {
+  if (amm === AutomatedMarketMakerEnum.enum.SLIPSTREAM) {
+    throw new Error("Not yet implemented for SLIPSTREAM");
+  }
   return await callEphemeralContract(
-    amm === AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3
-      ? {
-          abi: EphemeralPCSV3PoolTickBitmap__factory.abi,
-          bytecode: EphemeralPCSV3PoolTickBitmap__factory.bytecode,
-          args: [pool],
-        }
-      : {
-          abi: EphemeralPoolTickBitmap__factory.abi,
-          bytecode: EphemeralPoolTickBitmap__factory.bytecode,
-          args: [pool],
-        },
+    {
+      abi: EphemeralPoolTickBitmap__factory.abi,
+      bytecode: EphemeralPoolTickBitmap__factory.bytecode,
+      args: [ammToSolidityDexEnum(amm), pool],
+    },
     publicClient,
     blockNumber,
   );
@@ -123,7 +104,7 @@ export async function getTickBitmapSlots(
 export type PositionKey = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<typeof EphemeralPoolPositions__factory.abi, "getPositions">["inputs"],
   "inputs"
->[1][0];
+>[2][0];
 
 export async function getPositionsSlots(
   amm: AutomatedMarketMakerEnum,
@@ -132,18 +113,15 @@ export async function getPositionsSlots(
   publicClient: PublicClient,
   blockNumber?: bigint,
 ) {
+  if (amm === AutomatedMarketMakerEnum.enum.SLIPSTREAM) {
+    throw new Error("Not yet implemented for SLIPSTREAM");
+  }
   return await callEphemeralContract(
-    amm === AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3
-      ? {
-          abi: EphemeralPCSV3PoolPositions__factory.abi,
-          bytecode: EphemeralPCSV3PoolPositions__factory.bytecode,
-          args: [pool, keys],
-        }
-      : {
-          abi: EphemeralPoolPositions__factory.abi,
-          bytecode: EphemeralPoolPositions__factory.bytecode,
-          args: [pool, keys],
-        },
+    {
+      abi: EphemeralPoolPositions__factory.abi,
+      bytecode: EphemeralPoolPositions__factory.bytecode,
+      args: [ammToSolidityDexEnum(amm), pool, keys],
+    },
     publicClient,
     blockNumber,
   );

@@ -5,20 +5,7 @@ import {
   EphemeralGetPosition__factory,
   EphemeralGetPositions__factory,
 } from "../../typechain";
-import { AutomatedMarketMakerEnum } from "./poolLens";
-
-function ammToSolidityDexEnum(amm: AutomatedMarketMakerEnum): number {
-  if (amm === AutomatedMarketMakerEnum.enum.UNISWAP_V3) {
-    return 0;
-  }
-  if (amm === AutomatedMarketMakerEnum.enum.PANCAKESWAP_V3) {
-    return 1;
-  }
-  if (amm === AutomatedMarketMakerEnum.enum.SLIPSTREAM) {
-    return 2;
-  }
-  throw new Error(`Unexpected AMM: ${amm}`);
-}
+import { ammToSolidityDexEnum, AutomatedMarketMakerEnum } from "./amm";
 
 /**
  * Get the position details in a single call by deploying an ephemeral contract via `eth_call`
