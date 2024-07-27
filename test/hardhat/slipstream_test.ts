@@ -26,7 +26,7 @@ const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 describe("Pool lens test with SlipStream on Base", () => {
   const publicClient = createPublicClient({
     chain: base,
-    transport: http(`${process.env.BASE_RPC_URL}`),
+    transport: http('https://base-rpc.publicnode.com'),
     batch: {
       multicall: true,
     },

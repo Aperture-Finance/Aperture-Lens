@@ -8,7 +8,7 @@ on:
 
 env:
   FOUNDRY_PROFILE: ci
-  BNB_RPC_URL: ${{ secrets.BNB_RPC_URL }}
+  BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
 
 jobs:
   check:
