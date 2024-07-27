@@ -6,9 +6,6 @@ on:
       - main
   pull_request:
 
-env:
-  INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
-
 jobs: # each workflow consists of 1+ jobs; by default, all jobs run in parallel
   test: # Run tests.
     runs-on: ubuntu-latest # host's operating system
