@@ -137,7 +137,7 @@ describe("Pool lens test with UniV3 on mainnet", () => {
 
   it("Test getting all positions by owner", async () => {
     const totalSupply = await npm.read.totalSupply({ blockNumber });
-    const tokenId = await npm.read.tokenByIndex([totalSupply - 1n], { blockNumber });
+    const tokenId = await npm.read.tokenByIndex([0n], { blockNumber });
     const owner = await npm.read.ownerOf([tokenId], { blockNumber });
     const posArr = await getAllPositionsByOwner(AMM, UNIV3_NPM, owner, publicClient, blockNumber);
     await verifyPositionDetails(posArr);
