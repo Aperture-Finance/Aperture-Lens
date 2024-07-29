@@ -7,10 +7,10 @@
   resolved "https://registry.yarnpkg.com/@adraffy/ens-normalize/-/ens-normalize-1.10.0.tgz#d2a39395c587e092d77cbbc80acf956a54f38bf7"
   integrity sha512-nA9XHtlAkYfJxY7bce8DcN7eKxWWCWkU+1GR9d+U6MbNpfwQp8TI7vqOsBsMcHoT4mBu2kypKoSKnghEzOOq5Q==
 
-"@aperture_finance/uni-v3-lib@^3.0.0-alpha":
-  version "3.0.0-alpha"
-  resolved "https://registry.yarnpkg.com/@aperture_finance/uni-v3-lib/-/uni-v3-lib-3.0.0-alpha.tgz#b542d730641cbd477eceddc4b633dae98d73f4aa"
-  integrity sha512-GJe5wEPKgP25z3eoMqrfRuCFOnebn5dk6cfLj3hqnPHAjcAYgT5IUt4yPI+ba0lpEgQiybQIkK67IAoeq/lhRQ==
+"@aperture_finance/uni-v3-lib@^3.0.2":
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/@aperture_finance/uni-v3-lib/-/uni-v3-lib-3.0.2.tgz#c0be18fa3035685415230a946acf848807b289c8"
+  integrity sha512-LvROLUy8BqVJ9BBLHGUZIyI2iTjfej7BCOiQ+N836viZfJZ1a36zZdl6E1SS4hMX9VLFJaMHjbt+RaYu7m80jA==
   dependencies:
     "@openzeppelin/contracts" "^5.0.2"
     "@pancakeswap/v3-core" "^1.0.2"
