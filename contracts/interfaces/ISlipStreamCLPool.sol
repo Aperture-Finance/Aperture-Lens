@@ -1,7 +1,83 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+// Partial interface of the SlipStream CL pool contract.
+// @dev Copied from https://github.com/velodrome-finance/slipstream/blob/main/contracts/core/interfaces/pool/ICLPoolState.sol.
 interface ISlipStreamCLPool {
+    /// @notice The 0th storage slot in the pool stores many values, and is exposed as a single method to save gas
+    /// when accessed externally.
+    /// @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
+    /// tick The current tick of the pool, i.e. according to the last tick transition that was run.
+    /// This value may not always be equal to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96) if the price is on a tick
+    /// boundary.
+    /// observationIndex The index of the last oracle observation that was written,
+    /// observationCardinality The current maximum number of observations stored in the pool,
+    /// observationCardinalityNext The next maximum number of observations, to be updated when the observation.
+    /// unlocked Whether the pool is currently locked to reentrancy
+    function slot0()
+        external
+        view
+        returns (
+            uint160 sqrtPriceX96,
+            int24 tick,
+            uint16 observationIndex,
+            uint16 observationCardinality,
+            uint16 observationCardinalityNext,
+            bool unlocked
+        );
+
+    /// @notice The pool's swap & flash fee in pips, i.e. 1e-6
+    /// @dev Can be modified in PoolFactory on a pool basis or upgraded to be dynamic.
+    /// @return The swap & flash fee
+    function fee() external view returns (uint24);
+
+    /// @notice The pool's unstaked fee in pips, i.e. 1e-6
+    /// @dev Can be modified in PoolFactory on a pool basis or upgraded to be dynamic.
+    /// @return The unstaked fee
+    function unstakedFee() external view returns (uint24);
+
+    /// @notice The fee growth as a Q128.128 fees of token0 collected per unit of liquidity for the entire life of the pool
+    /// @dev This value can overflow the uint256
+    function feeGrowthGlobal0X128() external view returns (uint256);
+
+    /// @notice The fee growth as a Q128.128 fees of token1 collected per unit of liquidity for the entire life of the pool
+    /// @dev This value can overflow the uint256
+    function feeGrowthGlobal1X128() external view returns (uint256);
+
+    /// @notice The reward growth as a Q128.128 rewards of emission collected per unit of liquidity for the entire life of the pool
+    /// @dev This value can overflow the uint256
+    function rewardGrowthGlobalX128() external view returns (uint256);
+
+    /// @notice The amounts of token0 and token1 that are owed to the gauge
+    /// @dev Gauge fees will never exceed uint128 max in either token
+    function gaugeFees() external view returns (uint128 token0, uint128 token1);
+
+    /// @notice the emission rate of time-based farming
+    function rewardRate() external view returns (uint256);
+
+    /// @notice acts as a virtual reserve that holds information on how many rewards are yet to be distributed
+    function rewardReserve() external view returns (uint256);
+
+    /// @notice timestamp of the end of the current epoch's rewards
+    function periodFinish() external view returns (uint256);
+
+    /// @notice last time the rewardReserve and rewardRate were updated
+    function lastUpdated() external view returns (uint32);
+
+    /// @notice tracks total rewards distributed when no staked liquidity in active tick for epoch ending at periodFinish
+    /// @notice this amount is rolled over on the next call to notifyRewardAmount
+    /// @dev rollover will always be smaller than the rewards distributed that epoch
+    function rollover() external view returns (uint256);
+
+    /// @notice The currently in range liquidity available to the pool
+    /// @dev This value has no relationship to the total liquidity across all ticks
+    /// @dev This value includes staked liquidity
+    function liquidity() external view returns (uint128);
+
+    /// @notice The currently in range staked liquidity available to the pool
+    /// @dev This value has no relationship to the total staked liquidity across all ticks
+    function stakedLiquidity() external view returns (uint128);
+
     /// @notice Look up information about a specific tick in the pool
     /// @param tick The tick to look up
     /// @return liquidityGross the total amount of position liquidity that uses the pool either as tick lower or
@@ -36,43 +112,59 @@ interface ISlipStreamCLPool {
             bool initialized
         );
 
-    /// @notice The 0th storage slot in the pool stores many values, and is exposed as a single method to save gas
-    /// when accessed externally.
-    /// @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
-    /// tick The current tick of the pool, i.e. according to the last tick transition that was run.
-    /// This value may not always be equal to SqrtTickMath.getTickAtSqrtRatio(sqrtPriceX96) if the price is on a tick
-    /// boundary.
-    /// observationIndex The index of the last oracle observation that was written,
-    /// observationCardinality The current maximum number of observations stored in the pool,
-    /// observationCardinalityNext The next maximum number of observations, to be updated when the observation.
-    /// unlocked Whether the pool is currently locked to reentrancy
-    function slot0()
+    /// @notice Returns 256 packed tick initialized boolean values. See TickBitmap for more information
+    function tickBitmap(int16 wordPosition) external view returns (uint256);
+
+    /// @notice Returns the information about a position by the position's key
+    /// @param key The position's key is a hash of a preimage composed by the owner, tickLower and tickUpper
+    /// @return _liquidity The amount of liquidity in the position,
+    /// Returns feeGrowthInside0LastX128 fee growth of token0 inside the tick range as of the last mint/burn/poke,
+    /// Returns feeGrowthInside1LastX128 fee growth of token1 inside the tick range as of the last mint/burn/poke,
+    /// Returns tokensOwed0 the computed amount of token0 owed to the position as of the last mint/burn/poke,
+    /// Returns tokensOwed1 the computed amount of token1 owed to the position as of the last mint/burn/poke
+    function positions(
+        bytes32 key
+    )
         external
         view
         returns (
-            uint160 sqrtPriceX96,
-            int24 tick,
-            uint16 observationIndex,
-            uint16 observationCardinality,
-            uint16 observationCardinalityNext,
-            bool unlocked
+            uint128 _liquidity,
+            uint256 feeGrowthInside0LastX128,
+            uint256 feeGrowthInside1LastX128,
+            uint128 tokensOwed0,
+            uint128 tokensOwed1
         );
 
-    /// @notice Emitted when liquidity is minted for a given position
-    /// @param sender The address that minted the liquidity
-    /// @param owner The owner of the position and recipient of any minted liquidity
-    /// @param tickLower The lower tick of the position
-    /// @param tickUpper The upper tick of the position
-    /// @param amount The amount of liquidity minted to the position range
-    /// @param amount0 How much token0 was required for the minted liquidity
-    /// @param amount1 How much token1 was required for the minted liquidity
-    event Mint(
-        address sender,
-        address indexed owner,
-        int24 indexed tickLower,
-        int24 indexed tickUpper,
-        uint128 amount,
-        uint256 amount0,
-        uint256 amount1
-    );
+    /// @notice Returns data about a specific observation index
+    /// @param index The element of the observations array to fetch
+    /// @dev You most likely want to use #observe() instead of this method to get an observation as of some amount of time
+    /// ago, rather than at a specific index in the array.
+    /// @return blockTimestamp The timestamp of the observation,
+    /// Returns tickCumulative the tick multiplied by seconds elapsed for the life of the pool as of the observation timestamp,
+    /// Returns secondsPerLiquidityCumulativeX128 the seconds per in range liquidity for the life of the pool as of the observation timestamp,
+    /// Returns initialized whether the observation has been initialized and the values are safe to use
+    function observations(
+        uint256 index
+    )
+        external
+        view
+        returns (
+            uint32 blockTimestamp,
+            int56 tickCumulative,
+            uint160 secondsPerLiquidityCumulativeX128,
+            bool initialized
+        );
+
+    /// @notice Returns data about reward growth within a tick range.
+    /// RewardGrowthGlobalX128 can be supplied as a parameter for claimable reward calculations.
+    /// @dev Used in gauge reward/earned calculations
+    /// @param tickLower The lower tick of the range
+    /// @param tickUpper The upper tick of the range
+    /// @param _rewardGrowthGlobalX128 a calculated rewardGrowthGlobalX128 or 0 (in case of 0 it means we use the rewardGrowthGlobalX128 from state)
+    /// @return rewardGrowthInsideX128 The reward growth in the range
+    function getRewardGrowthInside(
+        int24 tickLower,
+        int24 tickUpper,
+        uint256 _rewardGrowthGlobalX128
+    ) external view returns (uint256 rewardGrowthInsideX128);
 }
