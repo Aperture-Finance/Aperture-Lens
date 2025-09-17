@@ -29,6 +29,7 @@ struct Slot0 {
 
 struct PositionFull {
     // the nonce for permits
+    // for v4, this field will be missing due to its unordered nonce design.
     uint96 nonce;
     // the address that is approved for spending this token
     address operator;
@@ -47,6 +48,9 @@ struct PositionFull {
     // how many uncollected tokens are owed to the position, as of the last computation
     uint128 tokensOwed0;
     uint128 tokensOwed1;
+
+    // Only populated for UniV4.
+    bytes32 salt;
 }
 
 struct PositionState {

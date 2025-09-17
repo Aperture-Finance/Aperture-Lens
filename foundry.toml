@@ -7,6 +7,7 @@ cache = true
 
 optimizer = true
 optimizer_runs = 4294967295
+via_ir = true
 bytecode_hash = 'none'
 sparse_mode = true
 ignored_error_codes = [3860, 5574]
@@ -26,5 +27,6 @@ runs = 16
 
 [rpc_endpoints]
 base = "${BASE_RPC_URL}"
+ethereum = "${ETHEREUM_RPC_URL}"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
