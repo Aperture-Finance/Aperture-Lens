@@ -84,12 +84,12 @@ contract EphemeralGetPopulatedTicksInRangeV4 is PoolUtilsV4 {
         int24 tick,
         PopulatedTick memory populatedTick
     ) internal view {
-        (uint128 liquidityGross, int128 liquidityNet, uint256 feeGrowthOutside0X128, uint256 feeGrowthOutside1X128) =
-            IPoolManager(poolManagerAddr).getTickInfo(poolKey.toId(), tick);
         populatedTick.tick = tick;
-        populatedTick.liquidityNet = liquidityNet;
-        populatedTick.liquidityGross = liquidityGross;
-        populatedTick.feeGrowthOutside0X128 = feeGrowthOutside0X128;
-        populatedTick.feeGrowthOutside1X128 = feeGrowthOutside1X128;
+        (
+            populatedTick.liquidityGross,
+            populatedTick.liquidityNet,
+            populatedTick.feeGrowthOutside0X128,
+            populatedTick.feeGrowthOutside1X128
+        ) = IPoolManager(poolManagerAddr).getTickInfo(poolKey.toId(), tick);
     }
 }
