@@ -1,6 +1,6 @@
 {
   "name": "@aperture_finance/aperture-lens",
-  "version": "3.0.0-alpha1",
+  "version": "3.0.0-alpha2",
   "description": "Contains ephemeral lens contracts that can be called without deployment and their interfaces in various Web3 libraries.",
   "author": "Aperture Finance <engineering@aperture.finance>",
   "license": "Apache-2.0",
@@ -47,14 +47,14 @@
     "typechain": "hardhat typechain"
   },
   "dependencies": {
-    "@aperture_finance/uni-v3-lib": "^3.0.3",
-    "@openzeppelin/contracts": "^5.4.0",
-    "@uniswap/v4-core": "^1.0.2",
-    "@uniswap/v4-periphery": "^1.0.3",
-    "@uniswap/v4-sdk": "^1.21.4",
+    "@aperture_finance/uni-v3-lib": "3.0.3",
+    "@openzeppelin/contracts": "5.4.0",
+    "@uniswap/v4-core": "1.0.2",
+    "@uniswap/v4-periphery": "1.0.3",
+    "@uniswap/v4-sdk": "1.22.0",
     "ethers": "5.7.2",
-    "viem": "^2.8.4",
-    "zod": "^3.23.8"
+    "viem": "2.38.6",
+    "zod": "4.1.12"
   },
   "devDependencies": {
     "@ethersproject/abi": "5.7.0",
