@@ -5,6 +5,7 @@ export const AutomatedMarketMakerEnum = z.enum([
     'PANCAKESWAP_V3',
     'SLIPSTREAM',
     'UNISWAP_V4',
+    'PANCAKESWAP_INFINITY',
 ]);
 export type AutomatedMarketMakerEnum = z.infer<typeof AutomatedMarketMakerEnum>;
 
@@ -20,6 +21,9 @@ export function ammToSolidityDexEnum(amm: AutomatedMarketMakerEnum): number {
     }
     if (amm === AutomatedMarketMakerEnum.enum.UNISWAP_V4) {
         return 3;
+    }
+    if (amm === AutomatedMarketMakerEnum.enum.PANCAKESWAP_INFINITY) {
+        return 4;
     }
     throw new Error(`Unexpected AMM: ${amm}`);
 }
