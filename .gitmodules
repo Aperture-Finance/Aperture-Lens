@@ -4,3 +4,9 @@
 [submodule "lib/permit2"]
 	path = lib/permit2
 	url = https://github.com/Uniswap/permit2
+[submodule "lib/infinity-core"]
+	path = lib/infinity-core
+	url = https://github.com/pancakeswap/infinity-core
+[submodule "lib/infinity-periphery"]
+	path = lib/infinity-periphery
+	url = https://github.com/pancakeswap/infinity-periphery
