@@ -64,7 +64,6 @@ describe("Pool lens test with UniV4 on mainnet", () => {
     'USDC'
   )
   const poolId = Pool.getPoolId(ETH_TOKEN, USDC_TOKEN, 500, 10, zeroAddress) as `0x${string}`;
-  const ERC721Owner = "0xbeef63AE5a2102506e8a352a5bB32aA8B30B3112";
 
   before(async () => {
     blockNumber = (await publicClient.getBlockNumber()) - 64n;
@@ -87,7 +86,7 @@ describe("Pool lens test with UniV4 on mainnet", () => {
     );
   });
 
-  it.only("Test getting single position details", async () => {
+  it("Test getting single position details", async () => {
     const {
       tokenId,
       slot0: { sqrtPriceX96, tick },
@@ -98,7 +97,7 @@ describe("Pool lens test with UniV4 on mainnet", () => {
     expect(tick).to.be.eq(_tick);
   });
 
-  it.only("Test getting position array", async () => {
+  it("Test getting position array", async () => {
     const positions = await getPositionsV4(
       UNIV4_POSITION_MANAGER, [TOKEN_ID, TOKEN_ID],
       publicClient,

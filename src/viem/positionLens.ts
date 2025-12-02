@@ -6,6 +6,8 @@ import {
   EphemeralGetPositions__factory,
   EphemeralGetPositionV4__factory,
   EphemeralGetPositionsV4__factory,
+  EphemeralGetPositionPCSV4__factory,
+  EphemeralGetPositionsPCSV4__factory,
 } from "../../typechain";
 import { ammToSolidityDexEnum, AutomatedMarketMakerEnum } from "./amm";
 
@@ -61,6 +63,31 @@ export async function getPositionDetailsV4(
 }
 
 /**
+ * Get the position details in a single call by deploying an ephemeral contract via `eth_call`
+ * @param positionManager Position manager address.
+ * @param positionId Position id.
+ * @param publicClient Viem public client.
+ * @param blockNumber Optional block number to query.
+ * @returns The position details.
+ */
+export async function getPositionDetailsPCSV4(
+  positionManager: Address,
+  positionId: bigint,
+  publicClient: PublicClient,
+  blockNumber?: bigint,
+) {
+  return await callEphemeralContract(
+    {
+      abi: EphemeralGetPositionPCSV4__factory.abi,
+      bytecode: EphemeralGetPositionPCSV4__factory.bytecode,
+      args: [positionManager, positionId],
+    },
+    publicClient,
+    blockNumber,
+  );
+}
+
+/**
  * Get the state and pool for all positions in a single call by deploying an ephemeral contract via `eth_call`.
  * @param npm Nonfungible position manager address.
  * @param positionIds Position ids.
@@ -104,6 +131,31 @@ export async function getPositionsV4(
     {
       abi: EphemeralGetPositionsV4__factory.abi,
       bytecode: EphemeralGetPositionsV4__factory.bytecode,
+      args: [positionManager, positionIds],
+    },
+    publicClient,
+    blockNumber,
+  );
+}
+
+/**
+ * Get the state and pool for all positions in a single call by deploying an ephemeral contract via `eth_call`.
+ * @param positionManager Position manager address.
+ * @param positionIds Position ids.
+ * @param publicClient Viem public client.
+ * @param blockNumber Optional block number to query.
+ * @returns The position details for all positions.
+ */
+export async function getPositionsPCSV4(
+  positionManager: Address,
+  positionIds: bigint[],
+  publicClient: PublicClient,
+  blockNumber?: bigint,
+) {
+  return await callEphemeralContract(
+    {
+      abi: EphemeralGetPositionsPCSV4__factory.abi,
+      bytecode: EphemeralGetPositionsPCSV4__factory.bytecode,
       args: [positionManager, positionIds],
     },
     publicClient,
