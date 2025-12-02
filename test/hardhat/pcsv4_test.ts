@@ -2,6 +2,7 @@ import { zeroAddress } from "viem";
 import { expect } from "chai";
 import { ContractFunctionReturnType, createPublicClient, getContract, http } from "viem";
 import {
+  getMostRecentPositionsPCSV4,
   getPopulatedTicksInRangePCSV4,
   getPositionDetailsPCSV4,
   getPositionsPCSV4,
@@ -18,7 +19,7 @@ const PCSV4_POOL_MANAGER = "0xa0FfB9c1CE1Fe56963B0321B32E7A0302114058b";
 const PCSV4_POSITION_MANAGER = "0x55f4c8abA71A1e923edC303eb4fEfF14608cC226";
 const USDC_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
 
-describe.only("Pool lens test with UniV4 on mainnet", () => {
+describe("Pool lens test with PCS V4 on BNB", () => {
   const publicClient = createPublicClient({
     chain: bsc,
     transport: http(`https://bsc-rpc.publicnode.com`),
@@ -100,4 +101,18 @@ describe.only("Pool lens test with UniV4 on mainnet", () => {
       }),
     );
   }
+
+  it.skip("Test getting most recent positions by owner", async () => {
+    const ownerAddress = "0xcC1C812774A28820e364DBcCCD205c2167E56cD9";
+    const limit = 300n;
+    const recentPositions = await getMostRecentPositionsPCSV4(
+      PCSV4_POSITION_MANAGER,
+      ownerAddress,
+      limit,
+      publicClient,
+      blockNumber,
+    );
+    console.log("Recent positions: ", recentPositions);
+    expect(recentPositions.length).to.be.lte(Number(limit));
+  });
 });

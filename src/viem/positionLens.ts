@@ -8,6 +8,7 @@ import {
   EphemeralGetPositionsV4__factory,
   EphemeralGetPositionPCSV4__factory,
   EphemeralGetPositionsPCSV4__factory,
+  EphemeralGetMostRecentPositionsPCSV4__factory,
 } from "../../typechain";
 import { ammToSolidityDexEnum, AutomatedMarketMakerEnum } from "./amm";
 
@@ -81,6 +82,27 @@ export async function getPositionDetailsPCSV4(
       abi: EphemeralGetPositionPCSV4__factory.abi,
       bytecode: EphemeralGetPositionPCSV4__factory.bytecode,
       args: [positionManager, positionId],
+    },
+    publicClient,
+    blockNumber,
+  );
+}
+
+/**
+ * 
+ */
+export async function getMostRecentPositionsPCSV4(
+  positionManager: Address,
+  owner: Address,
+  limit: bigint,
+  publicClient: PublicClient,
+  blockNumber?: bigint,
+) {
+  return await callEphemeralContract(
+    {
+      abi: EphemeralGetMostRecentPositionsPCSV4__factory.abi,
+      bytecode: EphemeralGetMostRecentPositionsPCSV4__factory.bytecode,
+      args: [positionManager, owner, limit],
     },
     publicClient,
     blockNumber,
