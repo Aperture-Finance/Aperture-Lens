@@ -44,7 +44,7 @@ contract PositionLensPCSV4Test is BasePCSV4Test {
     }
 
     function verifyPosition(PositionState memory state) internal view virtual {
-        assertEq(state.poolKey.tickSpacing, 10, "tickSpacing");
+        assertEq(poolKey.parameters, 0x00000000000000000000000000000000000000000000000000000000000a00c2, "parameters");
         assertEq(state.owner, erc721Owner);
         assertEq(state.tokenId, tokenId);
         assertEq(state.activeLiquidity, 5136408834887709916624);

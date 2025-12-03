@@ -4,11 +4,8 @@ import {FullMath} from "@aperture_finance/uni-v3-lib/src/FullMath.sol";
 
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-import {PoolKey as V4PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Currency as V4Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {IHooks as V4IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
-
-import {PositionState} from "./PositionUtilsV4.sol";
 
 import {CLPosition} from "infinity-core/src/pool-cl/libraries/CLPosition.sol";
 import {Tick} from "infinity-core/src/pool-cl/libraries/Tick.sol";
@@ -29,6 +26,29 @@ import {PoolUtilsPCSV4} from "./PoolUtilsPCSV4.sol";
 import {PositionFull} from "./PositionUtils.sol";
 import {ERC20Callee} from "./libraries/ERC20Caller.sol";
 import {Slot0} from "./PositionUtils.sol";
+
+struct PositionState {
+    // token ID of the position
+    uint256 tokenId;
+    // position's owner
+    address owner;
+    // nonfungible position manager's position struct with real-time tokensOwed
+    PositionFull position;
+    // The pool key to look up from v4 pool manager.
+    PoolKey poolKey;
+    // The pool's fee in hundredths of a bip, i.e. 1e-6
+    uint24 poolFee;
+    // The pool's tick spacing.
+    int24 poolTickSpacing;
+    // pool's slot0 struct
+    Slot0 slot0;
+    // pool's active liquidity
+    uint128 activeLiquidity;
+    // token0's decimals
+    uint8 decimals0;
+    // token1's decimals
+    uint8 decimals1;
+}
 
 /// @title Position utility contract for PCS Infinity
 /// @author Aperture Finance
@@ -52,14 +72,7 @@ abstract contract PositionUtilsPCSV4 is PoolUtilsPCSV4 {
         state.tokenId = tokenId;
         state.poolFee = position.feeOrTickSpacing;
         state.poolTickSpacing = CLPoolParametersHelper.getTickSpacing(poolKey.parameters);
-        // Fit PCS V4 poolKey into V4 PoolKey.
-        state.poolKey = V4PoolKey(
-            V4Currency.wrap(Currency.unwrap(poolKey.currency0)),
-            V4Currency.wrap(Currency.unwrap(poolKey.currency1)),
-            poolKey.fee,
-            state.poolTickSpacing,
-            V4IHooks(address(poolKey.hooks))
-        );
+        state.poolKey = poolKey;
         // Pool's liquidity.
         state.activeLiquidity = poolManager.getLiquidity(poolKey.toId());
         // Slot0
