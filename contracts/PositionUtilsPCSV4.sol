@@ -25,7 +25,7 @@ import {IHooks} from "infinity-core/src/interfaces/IHooks.sol";
 import {PoolUtilsPCSV4} from "./PoolUtilsPCSV4.sol";
 import {PositionFull} from "./PositionUtils.sol";
 import {ERC20Callee} from "./libraries/ERC20Caller.sol";
-import {Slot0} from "./PositionUtils.sol";
+import {Slot0} from "./PositionUtilsV4.sol";
 
 struct PositionState {
     // token ID of the position
@@ -76,10 +76,11 @@ abstract contract PositionUtilsPCSV4 is PoolUtilsPCSV4 {
         // Pool's liquidity.
         state.activeLiquidity = poolManager.getLiquidity(poolKey.toId());
         // Slot0
-        (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee,) = poolManager.getSlot0(poolKey.toId());
+        (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee) = poolManager.getSlot0(poolKey.toId());
         state.slot0.sqrtPriceX96 = sqrtPriceX96;
         state.slot0.tick = tick;
-        state.slot0.feeProtocol = protocolFee;
+        state.slot0.protocolFee = protocolFee;
+        state.slot0.lpFee = lpFee;
 
         CLPosition.Info memory positionInfo = poolManager.getPosition(
             poolKey.toId(), positionManagerAddr, position.tickLower, position.tickUpper, position.salt

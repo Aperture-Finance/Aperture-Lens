@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {ICommonNonfungiblePositionManager as INPM, IUniswapV3NonfungiblePositionManager as IUniV3NPM} from "@aperture_finance/uni-v3-lib/src/interfaces/IUniswapV3NonfungiblePositionManager.sol";
-import {IPCSV3NonfungiblePositionManager as IPCSV3NPM} from "@aperture_finance/uni-v3-lib/src/interfaces/IPCSV3NonfungiblePositionManager.sol";
-import {ISlipStreamNonfungiblePositionManager as ISlipStreamNPM} from "@aperture_finance/uni-v3-lib/src/interfaces/ISlipStreamNonfungiblePositionManager.sol";
+import {
+    ICommonNonfungiblePositionManager as INPM,
+    IUniswapV3NonfungiblePositionManager as IUniV3NPM
+} from "@aperture_finance/uni-v3-lib/src/interfaces/IUniswapV3NonfungiblePositionManager.sol";
+import {
+    IPCSV3NonfungiblePositionManager as IPCSV3NPM
+} from "@aperture_finance/uni-v3-lib/src/interfaces/IPCSV3NonfungiblePositionManager.sol";
+import {
+    ISlipStreamNonfungiblePositionManager as ISlipStreamNPM
+} from "@aperture_finance/uni-v3-lib/src/interfaces/ISlipStreamNonfungiblePositionManager.sol";
 import {PoolAddress} from "@aperture_finance/uni-v3-lib/src/PoolAddress.sol";
 import {PoolAddressPancakeSwapV3} from "@aperture_finance/uni-v3-lib/src/PoolAddressPancakeSwapV3.sol";
 import {IUniswapV3PoolState, V3PoolCallee} from "@aperture_finance/uni-v3-lib/src/PoolCaller.sol";
@@ -91,25 +98,16 @@ abstract contract PositionUtils is PoolUtils {
         PositionFull memory position = state.position;
         if (dex == DEX.UniswapV3) {
             state.poolFee = position.feeOrTickSpacing;
-            state.pool = IUniswapV3Factory(IUniV3NPM(npm).factory()).getPool(
-                position.token0,
-                position.token1,
-                state.poolFee
-            );
+            state.pool =
+                IUniswapV3Factory(IUniV3NPM(npm).factory()).getPool(position.token0, position.token1, state.poolFee);
         } else if (dex == DEX.PancakeSwapV3) {
             state.poolFee = position.feeOrTickSpacing;
-            state.pool = IPancakeV3Factory(IUniV3NPM(npm).factory()).getPool(
-                position.token0,
-                position.token1,
-                state.poolFee
-            );
+            state.pool =
+                IPancakeV3Factory(IUniV3NPM(npm).factory()).getPool(position.token0, position.token1, state.poolFee);
         } else if (dex == DEX.SlipStream) {
             state.poolTickSpacing = int24(position.feeOrTickSpacing);
-            state.pool = ISlipStreamCLFactory(ISlipStreamNPM(npm).factory()).getPool(
-                position.token0,
-                position.token1,
-                state.poolTickSpacing
-            );
+            state.pool = ISlipStreamCLFactory(ISlipStreamNPM(npm).factory())
+                .getPool(position.token0, position.token1, state.poolTickSpacing);
         }
         V3PoolCallee pool = V3PoolCallee.wrap(state.pool);
         state.poolFee = pool.fee();
@@ -122,13 +120,8 @@ abstract contract PositionUtils is PoolUtils {
             state.slot0.unlocked = true;
         }
         if (position.liquidity != 0) {
-            (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) = getFeeGrowthInside(
-                dex,
-                state.pool,
-                position.tickLower,
-                position.tickUpper,
-                state.slot0.tick
-            );
+            (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) =
+                getFeeGrowthInside(dex, state.pool, position.tickLower, position.tickUpper, state.slot0.tick);
             (uint128 fees0, uint128 fees1) = calculateFeesGrowth(
                 position.liquidity,
                 feeGrowthInside0X128,
@@ -148,11 +141,11 @@ abstract contract PositionUtils is PoolUtils {
     /// @param tokenId The ID of the token that represents the position
     /// @param pos The position pointer to be updated in place
     /// @return exists Whether the position exists
-    function positionInPlace(
-        address npm,
-        uint256 tokenId,
-        PositionFull memory pos
-    ) internal view returns (bool exists) {
+    function positionInPlace(address npm, uint256 tokenId, PositionFull memory pos)
+        internal
+        view
+        returns (bool exists)
+    {
         bytes4 selector = IUniV3NPM(npm).positions.selector;
         assembly ("memory-safe") {
             // Write the abi-encoded calldata into memory.

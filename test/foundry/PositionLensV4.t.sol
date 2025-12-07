@@ -46,6 +46,8 @@ contract PositionLensV4Test is BaseV4Test {
         assertEq(Currency.unwrap(state.poolKey.currency1), USDC);
         assertEq(state.activeLiquidity, 1141661974404565126);
         assertEq(state.slot0.sqrtPriceX96, 5327567843637637731281362);
+        assertEq(state.slot0.protocolFee, 0, "protocol fee");
+        assertEq(state.slot0.lpFee, 500, "lp fee");
         assertEq(state.decimals0, 18);
         assertEq(state.decimals1, 6);
 

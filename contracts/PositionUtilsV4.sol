@@ -12,9 +12,18 @@ import {FullMath} from "@aperture_finance/uni-v3-lib/src/FullMath.sol";
 import {PoolUtilsV4} from "./PoolUtilsV4.sol";
 import {PositionFull} from "./PositionUtils.sol";
 import {ERC20Callee} from "./libraries/ERC20Caller.sol";
-import {Slot0} from "./PositionUtils.sol";
 import {PositionInfo, PositionInfoLibrary} from "@uniswap/v4-periphery/src/libraries/PositionInfoLibrary.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
+struct Slot0 {
+    uint160 sqrtPriceX96;
+    int24 tick;
+    // For V4-styled exchanges, this is how much fee is paid to the ptotocol.
+    uint32 protocolFee;
+    // For V4-styled exchanges, this is how much fee is paid to the LP.
+    // Only populated for UniV4 and PCS Infinity.
+    uint24 lpFee;
+}
 
 struct PositionState {
     // token ID of the position
@@ -65,10 +74,11 @@ abstract contract PositionUtilsV4 is PoolUtilsV4 {
         // Pool's liquidity.
         state.activeLiquidity = poolManager.getLiquidity(poolKey.toId());
         // Slot0
-        (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee,) = poolManager.getSlot0(poolKey.toId());
+        (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee) = poolManager.getSlot0(poolKey.toId());
         state.slot0.sqrtPriceX96 = sqrtPriceX96;
         state.slot0.tick = tick;
-        state.slot0.feeProtocol = protocolFee;
+        state.slot0.protocolFee = protocolFee;
+        state.slot0.lpFee = lpFee;
 
         (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128) = poolManager.getPositionInfo(
             poolKey.toId(),
@@ -122,8 +132,7 @@ abstract contract PositionUtilsV4 is PoolUtilsV4 {
         //      - The owner of the liquidity position opened through Position Manager
         //          within Pool manager. This owner is the position manager.
         try IERC721(positionManagerAddr).ownerOf(tokenId) returns (address owner) {
-            (uint128 liquidity, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128) = poolManager
-                .getPositionInfo(
+            (uint128 liquidity, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128) = poolManager.getPositionInfo(
                 poolKey.toId(),
                 getPositionKeyV4(
                     PositionKeyV4(positionManagerAddr, info.tickLower(), info.tickUpper(), bytes32(tokenId))

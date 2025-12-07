@@ -49,6 +49,8 @@ contract PositionLensPCSV4Test is BasePCSV4Test {
         assertEq(state.tokenId, tokenId);
         assertEq(state.activeLiquidity, 5136408834887709916624);
         assertEq(state.slot0.sqrtPriceX96, 2280147888752920416539891832455);
+        assertEq(state.slot0.lpFee, 500, "lp fee");
+        assertEq(state.slot0.protocolFee, 1229100, "protocol fee");
         assertEq(state.decimals0, 18);
         assertEq(state.decimals1, 18);
 
